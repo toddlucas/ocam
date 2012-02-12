@@ -35,11 +35,10 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="MarkdownSharp">
-      <HintPath>..\Lib\MarkdownSharp.dll</HintPath>
+      <HintPath>..\..\lib\MarkdownSharp.dll</HintPath>
     </Reference>
-    <Reference Include="RazorEngine, Version=3.0.8.0, Culture=neutral, PublicKeyToken=9ee697374c7e744a, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\RazorEngine\release-3.0\src\Core\RazorEngine.Core\bin\Debug\RazorEngine.dll</HintPath>
+    <Reference Include="RazorEngine">
+      <HintPath>..\..\lib\RazorEngine.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
