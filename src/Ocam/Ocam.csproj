@@ -49,8 +49,13 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ArchiveGenerator.cs" />
+    <Compile Include="SiteContext.cs" />
+    <Compile Include="ISiteContext.cs" />
+    <Compile Include="IGenerator.cs" />
     <Compile Include="PageProcessingException.cs" />
     <Compile Include="PageModel.cs" />
+    <Compile Include="SiteConfiguration.cs" />
     <Compile Include="StartModel.cs" />
     <Compile Include="ConsoleProcess.cs" />
     <Compile Include="PageInfo.cs" />

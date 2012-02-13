@@ -12,16 +12,6 @@ namespace Ocam
         public static int PageDepth { get; set; }
     }
 
-    public class SiteConfiguration
-    {
-        public string IndexName { get; set; }
-        public string PageStart { get; set; }
-        public string Extension { get; set; }
-        public string Permalink { get; set; }
-        public bool Local { get; set; }
-        public bool Rebase { get; set; }
-    }
-
     class SiteProcessor : IDisposable
     {
         SiteConfiguration _config;
@@ -29,19 +19,20 @@ namespace Ocam
         string _root;
         bool _disposed = false;
         Stack<string> _pageStartStack = new Stack<string>();
-        Dictionary<string, PageInfo> _pageMap = new Dictionary<string, PageInfo>(StringComparer.OrdinalIgnoreCase);
-        Dictionary<string, List<PageInfo>> _categories = new Dictionary<string, List<PageInfo>>(StringComparer.OrdinalIgnoreCase);
-        Dictionary<string, List<PageInfo>> _tags = new Dictionary<string, List<PageInfo>>(StringComparer.OrdinalIgnoreCase);
         Regex _pathSeparatorRegex = new Regex(Path.DirectorySeparatorChar.ToString() + Path.DirectorySeparatorChar.ToString() + "+");
         MarkdownSharp.Markdown _markdown = new MarkdownSharp.Markdown();
         RazorEngine.Templating.TemplateService _pageTemplateService;
         RazorEngine.Templating.TemplateService _startTemplateService;
         PageModel _pageModel;
+        List<IGenerator> _generators;
+
+        SiteContext _context = new SiteContext();
 
         public delegate PageTemplate<PageModel> FileProcessor(string src, string dst, int depth, string name, StartTemplate<StartModel> startTemplate, Action<string, string> writer);
 
         string _siteDirName = "Site";
         string _htmlDirName = "Html";
+        string _templateDirName = "Templates";
 
         string _siteRoot;
         string _htmlRoot;
@@ -53,6 +44,8 @@ namespace Ocam
                 IndexName = "index.html",
                 PageStart = "_PageStart.cshtml",
                 Extension = ".html",
+                CategoryDir = "category",
+                TagDir = "tag",
 #if true
                 Permalink = "{year}/{month}/{day}/{title}",
                 Rebase = false,
@@ -61,6 +54,12 @@ namespace Ocam
                 Rebase = true,
 #endif
                 Local = true
+            };
+
+            _generators = new List<IGenerator>()
+            {
+                new ArchiveGenerator(ArchiveType.Categories, "Category.cshtml", _config.CategoryDir),
+                new ArchiveGenerator(ArchiveType.Tags, "Tag.cshtml", _config.TagDir)
             };
 
             var resolver = new TemplateResolver();
@@ -110,7 +109,21 @@ namespace Ocam
         {
             try
             {
-                ProcessPages(root);
+                _root = root;
+
+                _siteRoot = Path.Combine(_root, _siteDirName);
+                _htmlRoot = Path.Combine(_root, _htmlDirName);
+
+                _context = new SiteContext()
+                {
+                    Config = _config,
+                    SourceDir = _siteRoot,
+                    DestinationDir = _htmlRoot,
+                    TemplateDir = Path.Combine(_root, _templateDirName)
+                };
+
+                ProcessPages();
+                RunGenerators();
             }
             catch (PageProcessingException ex)
             {
@@ -151,13 +164,8 @@ namespace Ocam
 
         #region Processor
 
-        void ProcessPages(string root)
+        void ProcessPages()
         {
-            _root = root;
-
-            _siteRoot = Path.Combine(_root, _siteDirName);
-            _htmlRoot = Path.Combine(_root, _htmlDirName);
-
             _pageModel = new PageModel();
 
             _markdown.Highlighter = new PassthroughHighlighter();
@@ -165,7 +173,7 @@ namespace Ocam
             Console.WriteLine("Scanning");
             Walk(_root, _siteDirName, _root, _htmlDirName, false, 0);
 
-            _pageModel = new PageModel(_siteRoot, _pageMap, _categories, _tags);
+            _pageModel = new PageModel(_context);
             _markdown.Highlighter = new PygmentsHighlighter();
 
             Console.WriteLine("Building");
@@ -223,7 +231,7 @@ namespace Ocam
             Action<string, string> writer = null;
             if (write)
             {
-                PageInfo pageInfo = _pageMap[srcfile];
+                PageInfo pageInfo = _context.PageMap[srcfile];
 
                 dstfile = RewriteDestinationPath(pageInfo, src, ref dst, ref file, ref depth);
 
@@ -295,11 +303,19 @@ namespace Ocam
                 AddCategories(pageInfo, pageTemplate.Categories);
                 AddTags(pageInfo, pageTemplate.Tags);
 
-                _pageMap.Add(srcfile, pageInfo);
+                _context.PageMap.Add(srcfile, pageInfo);
             }
         }
 
         #endregion Processor
+
+        void RunGenerators()
+        {
+            foreach (var generator in _generators)
+            {
+                generator.Generate(_context, _pageTemplateService, _pageModel);
+            }
+        }
 
         #region General
 
@@ -310,12 +326,12 @@ namespace Ocam
 
             foreach (var category in categories)
             {
-                if (!_categories.ContainsKey(category))
+                if (!_context.Categories.ContainsKey(category))
                 {
-                    _categories.Add(category, new List<PageInfo>());
+                    _context.Categories.Add(category, new List<PageInfo>());
                 }
 
-                _categories[category].Add(page);
+                _context.Categories[category].Add(page);
             }
         }
 
@@ -326,12 +342,12 @@ namespace Ocam
 
             foreach (var tag in tags)
             {
-                if (!_tags.ContainsKey(tag))
+                if (!_context.Tags.ContainsKey(tag))
                 {
-                    _tags.Add(tag, new List<PageInfo>());
+                    _context.Tags.Add(tag, new List<PageInfo>());
                 }
 
-                _tags[tag].Add(page);
+                _context.Tags[tag].Add(page);
             }
         }
 
