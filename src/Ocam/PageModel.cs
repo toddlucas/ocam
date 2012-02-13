@@ -14,6 +14,8 @@ namespace Ocam
         public PageInfo[] Pages { get; set; }
         public PostInfo[] Posts { get; set; }
 
+        public string Source { get; set; }
+
         public PageModel()
         {
             // Provide non-null defaults for first pass.
@@ -37,9 +39,7 @@ namespace Ocam
                 var path = item.Key;
                 var page = item.Value;
 
-                var file = path.Substring(siteRoot.Length);
-                if (file.First() == Path.DirectorySeparatorChar)
-                    file = file.Substring(1);
+                var file = GetRelativePath(siteRoot, path);
 
                 map.Add(file, page);
                 if (page.Post == null)
@@ -58,6 +58,21 @@ namespace Ocam
             PageMap = map;
             Pages = pages.OrderByDescending(p => p.Date).ToArray();
             Posts = posts.OrderByDescending(p => p.Page.Date).ToArray();
+        }
+
+        public static string GetRelativePath(string basePath, string fullPath)
+        {
+            var path = fullPath.Substring(basePath.Length);
+            if (path.First() == Path.DirectorySeparatorChar)
+                path = path.Substring(1);
+            return path;
+        }
+
+        public PageInfo GetPageInfo()
+        {
+            if (!PageMap.ContainsKey(Source))
+                return null;
+            return PageMap[Source];
         }
     }
 }

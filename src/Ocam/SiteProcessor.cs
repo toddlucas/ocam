@@ -583,6 +583,9 @@ namespace Ocam
             // Set global page depth. Lame but OK since we're single threaded.
             ParseState.PageDepth = depth;
 
+            // This model state changes from page to page.
+            _pageModel.Source = PageModel.GetRelativePath(_siteRoot, path);
+
             // Create an instance of the page template for this cshtml.
             if (!_pageTemplateService.HasTemplate(name))
                 _pageTemplateService.Compile(cshtml, typeof(PageModel), name);

@@ -54,13 +54,29 @@ namespace Ocam
 
         public string Href(string href)
         {
+            if (href == null)
+                return null;
+
             // Convert the URL to a relative path. References will then work
             // whether loaded from the file system or a web server.
-            if (href != null && href.Length >= 2 && href.Substring(0, 2) == "~/")
+            if (href.Length >= 2 && href.Substring(0, 2) == "~/")
             {
                 string prefix = String.Join("../", new string[ParseState.PageDepth + 1]);
-                return prefix + href.Substring(2);
+                href = prefix + href.Substring(2);
+                if (href.Length == 0)
+                    return ".";
+                return href;
             }
+
+            if (href.Length == 1 && href.Substring(0, 1) == "~")
+            {
+                string prefix = String.Join("../", new string[ParseState.PageDepth + 1]);
+                href = prefix + href.Substring(1);
+                if (href.Length == 0)
+                    return ".";
+                return href;
+            }
+
             return href;
         }
 
@@ -98,10 +114,5 @@ namespace Ocam
 #endif
             return Href("~/" + pageInfo.Url);
         }
-
-        //public RazorEngine.Text.IEncodedString Raw(string text)
-        //{
-        //    return new RazorEngine.Text.RawString(text);
-        //}
     }
 }
