@@ -37,30 +37,10 @@ namespace Ocam
 
         public SiteProcessor()
         {
-            _config = new SiteConfiguration()
-            {
-                IndexName = "index.html",
-                PageStart = "_PageStart.cshtml",
-                Extension = ".html",
-                CategoryDir = "category",
-                CategoryTemplate = "Category.cshtml",
-                TagDir = "tag",
-                TagTemplate = "Tag.cshtml",
-#if true
-                Permalink = "{year}/{month}/{day}/{title}",
-                Rebase = false,
-#else
-                Permalink = "{year}/{month}/{day}/{title}/",
-                Rebase = true,
-#endif
-                ItemsPerPage = 1,
-                Local = true
-            };
-
             _generators = new List<IGenerator>()
             {
-                new ArchiveGenerator(ArchiveType.Categories),
-                new ArchiveGenerator(ArchiveType.Tags)
+                new ArchiveGenerator(ArchiveType.Category),
+                new ArchiveGenerator(ArchiveType.Tag)
             };
         }
 
@@ -94,6 +74,16 @@ namespace Ocam
 
                 _siteRoot = Path.Combine(_root, _siteDirName);
                 _htmlRoot = Path.Combine(_root, _htmlDirName);
+
+                var configPath = Path.Combine(_root, "Site.config");
+                if (File.Exists(configPath))
+                {
+                    _config = SiteConfiguration.Load(configPath);
+                }
+                else
+                {
+                    _config = new SiteConfiguration();
+                }
 
                 var resolver = new TemplateResolver();
                 var activator = new TemplateActivator(_config);
@@ -233,6 +223,11 @@ namespace Ocam
             if (write)
             {
                 PageInfo pageInfo = _context.PageMap[srcfile];
+                if (pageInfo == null)
+                {
+                    // This file is unpublished.
+                    return;
+                }
 
                 dstfile = RewriteDestinationPath(pageInfo, src, ref dst, ref file, ref depth);
 
@@ -249,7 +244,7 @@ namespace Ocam
 
             PageTemplate<PageModel> pageTemplate = process(srcfile, dstfile, depth, srcfile, startTemplate, writer);
 
-            if (!write)
+            if (!write && pageTemplate.Published)
             {
                 var contentStart = new StartTemplate<StartModel>()
                 {
@@ -508,11 +503,9 @@ namespace Ocam
         string GetInternalUrl(string dst, string file)
         {
             // Build a URL fragment for internal linking.
-            string dir = dst.Substring(_htmlRoot.Length);
+            string dir = FileUtility.GetRelativePath(_htmlRoot, dst);
             if (!file.Equals(_config.IndexName, StringComparison.OrdinalIgnoreCase) || _config.Local)
                 dir = Path.Combine(dir, file);
-            if (dir.First() == Path.DirectorySeparatorChar && dir.Length > 0)
-                dir = dir.Substring(1);
             
             return dir.Replace(Path.DirectorySeparatorChar, '/');
         }

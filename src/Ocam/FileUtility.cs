@@ -17,7 +17,7 @@ namespace Ocam
         public static string GetRelativePath(string basePath, string fullPath)
         {
             var path = fullPath.Substring(basePath.Length);
-            if (path.First() == Path.DirectorySeparatorChar)
+            if (path.Length > 0 && path.First() == Path.DirectorySeparatorChar)
                 path = path.Substring(1);
             return path;
         }

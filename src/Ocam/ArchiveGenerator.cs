@@ -8,8 +8,8 @@ namespace Ocam
 {
     public enum ArchiveType
     {
-        Categories,
-        Tags
+        Category,
+        Tag
     }
 
     public class ArchiveGenerator : IGenerator
@@ -33,13 +33,13 @@ namespace Ocam
             string template;
             string segment;
             Dictionary<string, List<PageInfo>> list;
-            if (_type == ArchiveType.Categories)
+            if (_type == ArchiveType.Category)
             {
                 list = context.Categories;
                 template = context.Config.CategoryTemplate;
                 segment = context.Config.CategoryDir;
             }
-            else // if (_type == ArchiveType.Tags)
+            else // if (_type == ArchiveType.Tag)
             {
                 list = context.Tags;
                 template = context.Config.TagTemplate;
@@ -87,20 +87,22 @@ namespace Ocam
             string file = FileUtility.GetArchivePath(context, segment, name, false, page);
             ParseState.PageDepth = FileUtility.GetDepthFromPath(context.DestinationDir, file);
 
-            // REVIEW: Allow to be configured?
+            // Provide a default list to the template. The template 
+            // may present their own ordering using skip/take.
             PageInfo[] pages = list
                 .OrderByDescending(p => p.Date)
                 .Skip(skip)
                 .Take(take)
                 .ToArray();
 
+            model.Paginator = new PaginatorInfo(pages, page, list.Count, skip, take, first, format);
+
             var instance = context.PageTemplateService.GetTemplate(_cshtml, model, path);
 
             var executeContext = new RazorEngine.Templating.ExecuteContext();
 
             executeContext.ViewBag.ArchiveName = name;
-
-            model.Paginator = new PaginatorInfo(pages, page, list.Count, skip, take, first, format);
+            executeContext.ViewBag.ArchiveType = _type.ToString();
 
             string result = instance.Run(executeContext);
 

@@ -52,11 +52,23 @@ namespace Ocam
             Rebase = config.Rebase; // Initialize to site default.
         }
 
+        /// <summary>
+        /// Link to an internal file based on its destination name.
+        /// Prefix with a tilde to resolve the relative URL.
+        /// </summary>
+        /// <param name="href"></param>
+        /// <returns></returns>
         public string Href(string href)
         {
             return FileUtility.GetContentPath(ParseState.PageDepth, href);
         }
 
+        /// <summary>
+        /// Link to an internal file based on its source name relative
+        /// to the site directory.
+        /// </summary>
+        /// <param name="source"></param>
+        /// <returns></returns>
         public string Link(string source)
         {
             if (String.IsNullOrWhiteSpace(source))
