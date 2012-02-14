@@ -43,7 +43,9 @@ namespace Ocam
                 PageStart = "_PageStart.cshtml",
                 Extension = ".html",
                 CategoryDir = "category",
+                CategoryTemplate = "Category.cshtml",
                 TagDir = "tag",
+                TagTemplate = "Tag.cshtml",
 #if true
                 Permalink = "{year}/{month}/{day}/{title}",
                 Rebase = false,
@@ -57,8 +59,8 @@ namespace Ocam
 
             _generators = new List<IGenerator>()
             {
-                new ArchiveGenerator(ArchiveType.Categories, "Category.cshtml", _config.CategoryDir),
-                new ArchiveGenerator(ArchiveType.Tags, "Tag.cshtml", _config.TagDir)
+                new ArchiveGenerator(ArchiveType.Categories),
+                new ArchiveGenerator(ArchiveType.Tags)
             };
         }
 
@@ -92,7 +94,6 @@ namespace Ocam
 
                 _siteRoot = Path.Combine(_root, _siteDirName);
                 _htmlRoot = Path.Combine(_root, _htmlDirName);
-
 
                 var resolver = new TemplateResolver();
                 var activator = new TemplateActivator(_config);
@@ -319,7 +320,7 @@ namespace Ocam
         {
             foreach (var generator in _generators)
             {
-                generator.Generate(_context, _pageModel, _config.ItemsPerPage);
+                generator.Generate(_context, _pageModel);
             }
         }
 
