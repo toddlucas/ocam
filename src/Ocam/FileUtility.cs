@@ -16,7 +16,13 @@ namespace Ocam
             return path;
         }
 
-        public static string GetArchivePath(ISiteContext context, string segment, string name, int page = 0)
+        public static string GetArchivePath(ISiteContext context, string segment, string name, int page)
+        {
+            string pageNumber = page == 0 ? null : page.ToString();
+            return GetArchivePath(context, segment, name, pageNumber);
+        }
+
+        public static string GetArchivePath(ISiteContext context, string segment, string name, string page = null)
         {
             string file;
 
@@ -29,14 +35,14 @@ namespace Ocam
             if (context.Config.Rebase)
             {
                 string dir = Path.Combine(dest, name);
-                if (page > 0)
-                    dir = Path.Combine(dir, page.ToString());
+                if (!String.IsNullOrWhiteSpace(page))
+                    dir = Path.Combine(dir, page);
                 file = Path.Combine(dir, context.Config.IndexName);
             }
             else
             {
-                if (page > 0)
-                    name = name + "-" + page.ToString();
+                if (!String.IsNullOrWhiteSpace(page))
+                    name = name + page;
                 file = Path.Combine(dest, name + context.Config.Extension);
             }
 

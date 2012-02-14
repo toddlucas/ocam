@@ -75,8 +75,17 @@ namespace Ocam
 
         void GeneratePage(ISiteContext context, PageModel model, string path, string name, List<PageInfo> list, int page, int skip, int take)
         {
+            string format = FileUtility.GetArchivePath(context, _segment, name, "{0}");
+            string first = FileUtility.GetArchivePath(context, _segment, name);
             string file = FileUtility.GetArchivePath(context, _segment, name, page);
             ParseState.PageDepth = FileUtility.GetDepthFromPath(context.DestinationDir, file);
+
+            // REVIEW: Allow to be configured?
+            PageInfo[] pages = list
+                .OrderByDescending(p => p.Date)
+                .Skip(skip)
+                .Take(take)
+                .ToArray();
 
             var instance = context.PageTemplateService.GetTemplate(_cshtml, model, path);
 
@@ -87,8 +96,7 @@ namespace Ocam
             else // if (_type == ArchiveType.Tags)
                 executeContext.ViewBag.Tag = name;
 
-            executeContext.ViewBag.Skip = skip;
-            executeContext.ViewBag.Take = take;
+            model.Paginator = new PaginatorInfo(pages, page, list.Count, skip, take, first, format);
 
             string result = instance.Run(executeContext);
 

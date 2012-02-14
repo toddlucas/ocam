@@ -18,6 +18,8 @@ namespace Ocam
         public Dictionary<string, string> CategoryPaths { get; set; }
         public Dictionary<string, string> TagPaths { get; set; }
 
+        public PaginatorInfo Paginator { get; set; }
+
         public string Source { get; set; }
 
         public PageModel()

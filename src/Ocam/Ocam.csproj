@@ -51,6 +51,7 @@
   <ItemGroup>
     <Compile Include="ArchiveGenerator.cs" />
     <Compile Include="FileUtility.cs" />
+    <Compile Include="PaginatorInfo.cs" />
     <Compile Include="SiteConfiguration.cs" />
     <Compile Include="ISiteContext.cs" />
     <Compile Include="IGenerator.cs" />
