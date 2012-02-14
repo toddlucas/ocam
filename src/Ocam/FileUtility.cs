@@ -8,6 +8,12 @@ namespace Ocam
 {
     public class FileUtility
     {
+        // File system reserved: < > : " / \ | ? *
+        static string _fsReserved = "<>:\"/\\|?*";
+
+        // ! # $ & ' ( ) * + , / : ; = ? @ [ ]
+        static string _uriReserved = "!#$&'()*+,/:;=?@[]";
+
         public static string GetRelativePath(string basePath, string fullPath)
         {
             var path = fullPath.Substring(basePath.Length);
@@ -16,22 +22,20 @@ namespace Ocam
             return path;
         }
 
-        public static string GetArchivePath(ISiteContext context, string segment, string name, int page)
+        public static string GetArchivePath(ISiteContext context, string segment, string name, bool uri, int page)
         {
             string pageNumber = page == 0 ? null : page.ToString();
-            return GetArchivePath(context, segment, name, pageNumber);
+            return GetArchivePath(context, segment, name, uri, pageNumber);
         }
 
-        public static string GetArchivePath(ISiteContext context, string segment, string name, string page = null)
+        public static string GetArchivePath(ISiteContext context, string segment, string name, bool uri, string page = null)
         {
-            string file;
-
-            name = name
-                .Replace(' ', '-')  // TODO: Replace unsafe file system and URL chars.
+            name = EncodePathSegment(name, uri)
                 .ToLower();         // TODO: Make this conditional
 
             string dest = Path.Combine(context.DestinationDir, segment);
 
+            string file;
             if (context.Config.Rebase)
             {
                 string dir = Path.Combine(dest, name);
@@ -42,7 +46,7 @@ namespace Ocam
             else
             {
                 if (!String.IsNullOrWhiteSpace(page))
-                    name = name + page;
+                    name = name + "-" + page;
                 file = Path.Combine(dest, name + context.Config.Extension);
             }
 
@@ -51,7 +55,7 @@ namespace Ocam
 
         public static string GetArchiveUrl(ISiteContext context, string segment, string name, string page = null)
         {
-            string path = FileUtility.GetArchivePath(context, segment, name, page);
+            string path = FileUtility.GetArchivePath(context, segment, name, true, page);
             path = FileUtility.GetRelativePath(context.DestinationDir, path);
             return path.Replace(Path.DirectorySeparatorChar, '/');
         }
@@ -100,6 +104,34 @@ namespace Ocam
             }
 
             return href;
+        }
+
+        public static string EncodePathSegment(string segment, bool uri)
+        {
+            var sb = new StringBuilder();
+            foreach (var c in segment)
+            {
+                if (Char.IsWhiteSpace(c))
+                {
+                    sb.Append('-');
+                }
+                else if (_fsReserved.IndexOf(c) >= 0)
+                {
+                    sb.Append("_");
+                }
+                else if (_uriReserved.IndexOf(c) >= 0)
+                {
+                    if (uri)
+                        sb.Append("%" + ((int)c).ToString("X2"));
+                    else
+                        sb.Append(c);
+                }
+                else
+                {
+                    sb.Append(c);
+                }
+            }
+            return sb.ToString();
         }
     }
 }

@@ -84,7 +84,7 @@ namespace Ocam
         {
             string format = FileUtility.GetArchiveUrl(context, segment, name, "{0}");
             string first = FileUtility.GetArchiveUrl(context, segment, name);
-            string file = FileUtility.GetArchivePath(context, segment, name, page);
+            string file = FileUtility.GetArchivePath(context, segment, name, false, page);
             ParseState.PageDepth = FileUtility.GetDepthFromPath(context.DestinationDir, file);
 
             // REVIEW: Allow to be configured?
@@ -98,10 +98,7 @@ namespace Ocam
 
             var executeContext = new RazorEngine.Templating.ExecuteContext();
 
-            if (_type == ArchiveType.Categories)
-                executeContext.ViewBag.Category = name;
-            else // if (_type == ArchiveType.Tags)
-                executeContext.ViewBag.Tag = name;
+            executeContext.ViewBag.ArchiveName = name;
 
             model.Paginator = new PaginatorInfo(pages, page, list.Count, skip, take, first, format);
 
