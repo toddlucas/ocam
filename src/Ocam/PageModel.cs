@@ -68,9 +68,7 @@ namespace Ocam
             {
                 categoryList.Add(item.Key);
 
-                string path = FileUtility.GetArchivePath(context, context.Config.CategoryDir, item.Key);
-                path = FileUtility.GetRelativePath(context.DestinationDir, path);
-                path = path.Replace(Path.DirectorySeparatorChar, '/');
+                string path = FileUtility.GetArchiveUrl(context, context.Config.CategoryDir, item.Key);
 
                 categoryPaths.Add(item.Key, path);
             }
@@ -81,9 +79,7 @@ namespace Ocam
             {
                 tagList.Add(item.Key);
 
-                string path = FileUtility.GetArchivePath(context, context.Config.TagDir, item.Key);
-                path = FileUtility.GetRelativePath(context.DestinationDir, path);
-                path = path.Replace(Path.DirectorySeparatorChar, '/');
+                string path = FileUtility.GetArchiveUrl(context, context.Config.TagDir, item.Key);
 
                 tagPaths.Add(item.Key, path);
             }

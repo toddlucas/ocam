@@ -82,8 +82,8 @@ namespace Ocam
 
         void GeneratePage(ISiteContext context, PageModel model, string path, string segment, string name, List<PageInfo> list, int page, int skip, int take)
         {
-            string format = FileUtility.GetArchivePath(context, segment, name, "{0}");
-            string first = FileUtility.GetArchivePath(context, segment, name);
+            string format = FileUtility.GetArchiveUrl(context, segment, name, "{0}");
+            string first = FileUtility.GetArchiveUrl(context, segment, name);
             string file = FileUtility.GetArchivePath(context, segment, name, page);
             ParseState.PageDepth = FileUtility.GetDepthFromPath(context.DestinationDir, file);
 

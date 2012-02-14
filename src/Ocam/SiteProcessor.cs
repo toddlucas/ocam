@@ -314,8 +314,6 @@ namespace Ocam
             }
         }
 
-        #endregion Processor
-
         void RunGenerators()
         {
             foreach (var generator in _generators)
@@ -323,6 +321,8 @@ namespace Ocam
                 generator.Generate(_context, _pageModel);
             }
         }
+
+        #endregion Processor
 
         #region General
 

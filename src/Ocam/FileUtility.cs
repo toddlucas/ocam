@@ -49,6 +49,13 @@ namespace Ocam
             return file;
         }
 
+        public static string GetArchiveUrl(ISiteContext context, string segment, string name, string page = null)
+        {
+            string path = FileUtility.GetArchivePath(context, segment, name, page);
+            path = FileUtility.GetRelativePath(context.DestinationDir, path);
+            return path.Replace(Path.DirectorySeparatorChar, '/');
+        }
+
         public static int GetPathSegmentCount(string path)
         {
             int count = path.Where(c => c == Path.DirectorySeparatorChar).Count();
