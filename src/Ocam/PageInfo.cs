@@ -7,7 +7,6 @@ namespace Ocam
 {
     public class PageInfo
     {
-        public PostInfo Post { get; set; }
         public bool Published { get; set; }
         public bool Rebase { get; set; }
         public DateTime Date { get; set; }

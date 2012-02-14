@@ -50,6 +50,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ArchiveGenerator.cs" />
+    <Compile Include="PathInfo.cs" />
     <Compile Include="FileUtility.cs" />
     <Compile Include="PaginatorInfo.cs" />
     <Compile Include="SiteConfiguration.cs" />

@@ -267,13 +267,13 @@ namespace Ocam
                 }
 
                 // If this file is named like a post, get the info.
-                PostInfo postInfo = PostInfo.GetPostInfo(src, file);
+                PathInfo pathInfo = PathInfo.GetpathInfo(src, file);
 
                 DateTime date = pageTemplate.Date.HasValue 
                     ? pageTemplate.Date.Value
-                    :(postInfo == null 
+                    : (pathInfo == null 
                         ? DateTime.MinValue
-                        : postInfo.Date);
+                        : pathInfo.Date);
 
                 if (date == DateTime.MinValue)
                 {
@@ -282,18 +282,24 @@ namespace Ocam
                     // Console.WriteLine("Warning: No date specified for {0}.", srcfile);
                 }
 
-                var pageInfo = new PageInfo()
+                PageInfo pageInfo;
+                if (pathInfo != null)
                 {
-                    Post = postInfo,
-                    Permalink = pageTemplate.Permalink,
-                    Rebase = pageTemplate.Rebase,
-                    Title = pageTemplate.Title,
-                    Content = content,
-                    Excerpt = pageTemplate.Excerpt,
-                    Categories = pageTemplate.Categories,   // TODO: Copy
-                    Tags = pageTemplate.Tags,               // TODO: Copy
-                    Date = date
-                };
+                    pageInfo = new PostInfo(pathInfo);
+                }
+                else
+                {
+                    pageInfo = new PageInfo();
+                }
+
+                pageInfo.Permalink = pageTemplate.Permalink;
+                pageInfo.Rebase = pageTemplate.Rebase;
+                pageInfo.Title = pageTemplate.Title;
+                pageInfo.Content = content;
+                pageInfo.Excerpt = pageTemplate.Excerpt;
+                pageInfo.Categories = pageTemplate.Categories;   // TODO: Copy
+                pageInfo.Tags = pageTemplate.Tags;               // TODO: Copy
+                pageInfo.Date = date;
 
                 RewriteDestinationPath(pageInfo, src, ref dst, ref file, ref depth);
 
@@ -426,12 +432,12 @@ namespace Ocam
 
         bool ApplyPermalink(PageInfo pageInfo, string src, ref string dst, ref string file, ref int depth)
         {
-            if (pageInfo.Post == null)
+            if (!(pageInfo is PostInfo))
             {
                 return false;
             }
 
-            var post = pageInfo.Post;
+            var post = pageInfo as PostInfo;
 
             if (String.IsNullOrWhiteSpace(pageInfo.Permalink) &&
                 String.IsNullOrWhiteSpace(_config.Permalink))
@@ -443,7 +449,7 @@ namespace Ocam
                 ? _config.Permalink
                 : pageInfo.Permalink;
 
-            var permalink = RewritePermalink(pageInfo, pattern, src, dst, post.Year, post.Month, post.Day);
+            var permalink = RewritePermalink(post, pattern, src, dst, post.Year, post.Month, post.Day);
 
             depth = GetPermalinkSegments(permalink);
 
@@ -469,7 +475,7 @@ namespace Ocam
             return true;
         }
 
-        string RewritePermalink(PageInfo pageInfo, string pattern, string src, string dst, int year, int month, int day)
+        string RewritePermalink(PostInfo postInfo, string pattern, string src, string dst, int year, int month, int day)
         {
             // Normalize to the filesystem path separator.
             pattern = pattern.Replace('/', Path.DirectorySeparatorChar);
@@ -478,8 +484,8 @@ namespace Ocam
                 .Replace("{year}", year == 0 ? String.Empty : year.ToString())
                 .Replace("{month}", month == 0 ? String.Empty : month.ToString())
                 .Replace("{day}", day == 0 ? String.Empty : day.ToString())
-                .Replace("{category}", GetDefaultCategorySegment(pageInfo))
-                .Replace("{title}", pageInfo.Post.Title);
+                .Replace("{category}", GetDefaultCategorySegment(postInfo))
+                .Replace("{title}", postInfo.Slug);
 
             // Remove any empty path segments.
             permalink = _pathSeparatorRegex.Replace(permalink, Path.DirectorySeparatorChar.ToString());

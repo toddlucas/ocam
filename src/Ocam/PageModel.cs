@@ -52,14 +52,13 @@ namespace Ocam
                 var file = FileUtility.GetRelativePath(context.SourceDir, path);
 
                 map.Add(file, page);
-                if (page.Post == null)
+                if (page is PostInfo)
                 {
-                    pages.Add(page);
+                    posts.Add(page as PostInfo);
                 }
                 else
                 {
-                    page.Post.Page = page; // A circular reference
-                    posts.Add(page.Post);
+                    pages.Add(page);
                 }
             }
 
@@ -97,7 +96,7 @@ namespace Ocam
             TagPages = context.Tags;
             PageMap = map;
             Pages = pages.OrderByDescending(p => p.Date).ToArray();
-            Posts = posts.OrderByDescending(p => p.Page.Date).ToArray();
+            Posts = posts.OrderByDescending(p => p.Date).ToArray();
         }
 
         public PageInfo GetPageInfo()
