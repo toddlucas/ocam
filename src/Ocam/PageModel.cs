@@ -47,7 +47,7 @@ namespace Ocam
                 var path = item.Key;
                 var page = item.Value;
 
-                var file = GetRelativePath(context.SourceDir, path);
+                var file = FileUtility.GetRelativePath(context.SourceDir, path);
 
                 map.Add(file, page);
                 if (page.Post == null)
@@ -67,8 +67,8 @@ namespace Ocam
             {
                 categoryList.Add(item.Key);
 
-                string path = GetArchivePath(context, context.Config.CategoryDir, item.Key);
-                path = GetRelativePath(context.DestinationDir, path);
+                string path = FileUtility.GetArchivePath(context, context.Config.CategoryDir, item.Key);
+                path = FileUtility.GetRelativePath(context.DestinationDir, path);
                 path = path.Replace(Path.DirectorySeparatorChar, '/');
 
                 categoryPaths.Add(item.Key, path);
@@ -80,8 +80,8 @@ namespace Ocam
             {
                 tagList.Add(item.Key);
 
-                string path = GetArchivePath(context, context.Config.TagDir, item.Key);
-                path = GetRelativePath(context.DestinationDir, path);
+                string path = FileUtility.GetArchivePath(context, context.Config.TagDir, item.Key);
+                path = FileUtility.GetRelativePath(context.DestinationDir, path);
                 path = path.Replace(Path.DirectorySeparatorChar, '/');
 
                 tagPaths.Add(item.Key, path);
@@ -96,38 +96,6 @@ namespace Ocam
             PageMap = map;
             Pages = pages.OrderByDescending(p => p.Date).ToArray();
             Posts = posts.OrderByDescending(p => p.Page.Date).ToArray();
-        }
-
-        public static string GetRelativePath(string basePath, string fullPath)
-        {
-            var path = fullPath.Substring(basePath.Length);
-            if (path.First() == Path.DirectorySeparatorChar)
-                path = path.Substring(1);
-            return path;
-        }
-
-        // TODO: Move this to a file related class.
-        public static string GetArchivePath(ISiteContext context, string segment, string name)
-        {
-            string file;
-
-            name = name
-                .Replace(' ', '-')  // TODO: Replace unsafe file system and URL chars.
-                .ToLower();         // TODO: Make this conditional
-
-            string dest = Path.Combine(context.DestinationDir, segment);
-
-            if (context.Config.Rebase)
-            {
-                string dir = Path.Combine(dest, name);
-                file = Path.Combine(dir, context.Config.IndexName);
-            }
-            else
-            {
-                file = Path.Combine(dest, name + context.Config.Extension);
-            }
-
-            return file;
         }
 
         public PageInfo GetPageInfo()

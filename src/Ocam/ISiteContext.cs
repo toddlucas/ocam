@@ -14,5 +14,6 @@ namespace Ocam
         string SourceDir { get; }
         string DestinationDir { get; }
         string TemplateDir { get; }
+        RazorEngine.Templating.TemplateService PageTemplateService { get; }
     }
 }

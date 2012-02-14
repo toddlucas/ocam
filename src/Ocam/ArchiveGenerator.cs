@@ -26,8 +26,13 @@ namespace Ocam
             _segment = segment;
         }
 
-        public void Generate(ISiteContext context, RazorEngine.Templating.TemplateService pageTemplateService, PageModel model)
+        public void Generate(ISiteContext context, PageModel model, int itemsPerPage)
         {
+            if (itemsPerPage <= 0)
+            {
+                throw new Exception("ItemsPerPage must be a positive number.");
+            }
+
             string path = Path.Combine(context.TemplateDir, _template);
             if (!File.Exists(path))
             {
@@ -46,8 +51,8 @@ namespace Ocam
             else // if (_type == ArchiveType.Tags)
                 list = context.Tags;
 
-            if (!pageTemplateService.HasTemplate(path))
-                pageTemplateService.Compile(_cshtml, typeof(PageModel), path);
+            if (!context.PageTemplateService.HasTemplate(path))
+                context.PageTemplateService.Compile(_cshtml, typeof(PageModel), path);
 
             string dir = Path.Combine(context.DestinationDir, _segment);
 
@@ -55,13 +60,25 @@ namespace Ocam
 
             foreach (var item in list)
             {
-                GeneratePage(context, pageTemplateService, model, path, item.Key, item.Value);
+                GenerateContent(context, model, path, item.Key, item.Value, itemsPerPage);
             }
         }
 
-        void GeneratePage(ISiteContext context, RazorEngine.Templating.TemplateService pageTemplateService, PageModel model, string path, string name, List<PageInfo> list)
+        void GenerateContent(ISiteContext context, PageModel model, string path, string name, List<PageInfo> list, int itemsPerPage)
         {
-            var instance = pageTemplateService.GetTemplate(_cshtml, model, path);
+            int pages = (list.Count + itemsPerPage - 1) / itemsPerPage;
+            for (int page = 0; page < pages; page++)
+            {
+                GeneratePage(context, model, path, name, list, page, page * itemsPerPage, itemsPerPage);
+            }
+        }
+
+        void GeneratePage(ISiteContext context, PageModel model, string path, string name, List<PageInfo> list, int page, int skip, int take)
+        {
+            string file = FileUtility.GetArchivePath(context, _segment, name, page);
+            ParseState.PageDepth = FileUtility.GetDepthFromPath(context.DestinationDir, file);
+
+            var instance = context.PageTemplateService.GetTemplate(_cshtml, model, path);
 
             var executeContext = new RazorEngine.Templating.ExecuteContext();
 
@@ -70,9 +87,11 @@ namespace Ocam
             else // if (_type == ArchiveType.Tags)
                 executeContext.ViewBag.Tag = name;
 
+            executeContext.ViewBag.Skip = skip;
+            executeContext.ViewBag.Take = take;
+
             string result = instance.Run(executeContext);
 
-            string file = PageModel.GetArchivePath(context, _segment, name);
             string dest = Path.GetDirectoryName(file);
             Directory.CreateDirectory(dest);
 

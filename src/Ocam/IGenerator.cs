@@ -7,6 +7,6 @@ namespace Ocam
 {
     public interface IGenerator
     {
-        void Generate(ISiteContext context, RazorEngine.Templating.TemplateService pageTemplateService, PageModel model);
+        void Generate(ISiteContext context, PageModel model, int itemsPerPage);
     }
 }

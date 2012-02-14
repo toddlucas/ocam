@@ -15,18 +15,16 @@ namespace Ocam
     class SiteProcessor : IDisposable
     {
         SiteConfiguration _config;
+        SiteContext _context;
 
         string _root;
         bool _disposed = false;
         Stack<string> _pageStartStack = new Stack<string>();
         Regex _pathSeparatorRegex = new Regex(Path.DirectorySeparatorChar.ToString() + Path.DirectorySeparatorChar.ToString() + "+");
         MarkdownSharp.Markdown _markdown = new MarkdownSharp.Markdown();
-        RazorEngine.Templating.TemplateService _pageTemplateService;
         RazorEngine.Templating.TemplateService _startTemplateService;
         PageModel _pageModel;
         List<IGenerator> _generators;
-
-        SiteContext _context = new SiteContext();
 
         public delegate PageTemplate<PageModel> FileProcessor(string src, string dst, int depth, string name, StartTemplate<StartModel> startTemplate, Action<string, string> writer);
 
@@ -53,6 +51,7 @@ namespace Ocam
                 Permalink = "{year}/{month}/{day}/{title}/",
                 Rebase = true,
 #endif
+                ItemsPerPage = 1,
                 Local = true
             };
 
@@ -61,26 +60,6 @@ namespace Ocam
                 new ArchiveGenerator(ArchiveType.Categories, "Category.cshtml", _config.CategoryDir),
                 new ArchiveGenerator(ArchiveType.Tags, "Tag.cshtml", _config.TagDir)
             };
-
-            var resolver = new TemplateResolver();
-            var activator = new TemplateActivator(_config);
-
-            var pageConfiguration = new RazorEngine.Configuration.TemplateServiceConfiguration()
-            {
-                BaseTemplateType = typeof(PageTemplate<>),
-                Resolver = resolver,
-                Activator = activator
-            };
-
-            var startConfiguration = new RazorEngine.Configuration.TemplateServiceConfiguration()
-            {
-                BaseTemplateType = typeof(StartTemplate<>),
-                Resolver = resolver,
-                Activator = activator
-            };
-
-            _pageTemplateService = new RazorEngine.Templating.TemplateService(pageConfiguration);
-            _startTemplateService = new RazorEngine.Templating.TemplateService(startConfiguration);
         }
 
         public void Dispose()
@@ -96,7 +75,7 @@ namespace Ocam
                 if (disposing)
                 {
                     // Managed resources
-                    _pageTemplateService.Dispose();
+                    _context.PageTemplateService.Dispose();
                     _startTemplateService.Dispose();
                 }
 
@@ -114,7 +93,28 @@ namespace Ocam
                 _siteRoot = Path.Combine(_root, _siteDirName);
                 _htmlRoot = Path.Combine(_root, _htmlDirName);
 
-                _context = new SiteContext()
+
+                var resolver = new TemplateResolver();
+                var activator = new TemplateActivator(_config);
+
+                var pageConfiguration = new RazorEngine.Configuration.TemplateServiceConfiguration()
+                {
+                    BaseTemplateType = typeof(PageTemplate<>),
+                    Resolver = resolver,
+                    Activator = activator
+                };
+
+                var startConfiguration = new RazorEngine.Configuration.TemplateServiceConfiguration()
+                {
+                    BaseTemplateType = typeof(StartTemplate<>),
+                    Resolver = resolver,
+                    Activator = activator
+                };
+
+                // _pageTemplateService = new RazorEngine.Templating.TemplateService(pageConfiguration);
+                _startTemplateService = new RazorEngine.Templating.TemplateService(startConfiguration);
+
+                _context = new SiteContext(pageConfiguration)
                 {
                     Config = _config,
                     SourceDir = _siteRoot,
@@ -313,7 +313,7 @@ namespace Ocam
         {
             foreach (var generator in _generators)
             {
-                generator.Generate(_context, _pageTemplateService, _pageModel);
+                generator.Generate(_context, _pageModel, _config.ItemsPerPage);
             }
         }
 
@@ -597,15 +597,20 @@ namespace Ocam
         PageTemplate<PageModel> ProcessRazorTemplate(string cshtml, string path, string dst, int depth, string name, StartTemplate<StartModel> startTemplate, Action<string, string> writer)
         {
             // Set global page depth. Lame but OK since we're single threaded.
+            if (dst != null)
+            {
+                int depthTest = FileUtility.GetDepthFromPath(_htmlRoot, dst);
+                System.Diagnostics.Debug.Assert(depth == depthTest);
+            }
             ParseState.PageDepth = depth;
 
             // This model state changes from page to page.
-            _pageModel.Source = PageModel.GetRelativePath(_siteRoot, path);
+            _pageModel.Source = FileUtility.GetRelativePath(_siteRoot, path);
 
             // Create an instance of the page template for this cshtml.
-            if (!_pageTemplateService.HasTemplate(name))
-                _pageTemplateService.Compile(cshtml, typeof(PageModel), name);
-            var instance = _pageTemplateService.GetTemplate(cshtml, _pageModel, name);
+            if (!_context.PageTemplateService.HasTemplate(name))
+                _context.PageTemplateService.Compile(cshtml, typeof(PageModel), name);
+            var instance = _context.PageTemplateService.GetTemplate(cshtml, _pageModel, name);
 
             // Apply any _PageStart defaults.
             var pageTemplate = instance as PageTemplate<PageModel>;
@@ -619,7 +624,7 @@ namespace Ocam
                 }
             }
 
-            string result = _pageTemplateService.Run(instance);
+            string result = _context.PageTemplateService.Run(instance);
 
             if (writer != null)
                 writer(dst, result);
