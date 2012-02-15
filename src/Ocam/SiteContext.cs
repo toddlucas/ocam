@@ -11,6 +11,7 @@ namespace Ocam
     public class SiteContext : ISiteContext
     {
         public SiteConfiguration Config { get; set; }
+        public Options Options { get; set; }
 
         public Dictionary<string, PageInfo> PageMap { get; private set; }
         public Dictionary<string, List<PageInfo>> Categories { get; private set; }

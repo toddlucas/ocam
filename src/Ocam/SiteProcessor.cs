@@ -66,7 +66,7 @@ namespace Ocam
             }
         }
 
-        public void Process(string root)
+        public void Process(string root, Options options)
         {
             try
             {
@@ -108,6 +108,7 @@ namespace Ocam
                 _context = new SiteContext(pageConfiguration)
                 {
                     Config = _config,
+                    Options = options,
                     SourceDir = _siteRoot,
                     DestinationDir = _htmlRoot,
                     TemplateDir = Path.Combine(_root, _templateDirName)
@@ -232,6 +233,9 @@ namespace Ocam
                 dstfile = RewriteDestinationPath(pageInfo, src, ref dst, ref file, ref depth);
 
                 Directory.CreateDirectory(dst);
+
+                if (_context.Options.Verbose)
+                    Console.WriteLine(dstfile);
 
                 writer = (d, r) => {
                     // Write the output file if a destination is specified.
