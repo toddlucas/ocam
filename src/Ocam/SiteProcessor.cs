@@ -26,7 +26,7 @@ namespace Ocam
         PluginManager _pluginManager;
         List<IGenerator> _generators;
 
-        public delegate PageTemplate<PageModel> FileProcessor(string src, string dst, int depth, string name, StartTemplate<StartModel> startTemplate, Action<string, string> writer);
+        public delegate PageTemplate<PageModel> FileProcessor(string src, string dst, string name, StartTemplate<StartModel> startTemplate, Action<string, string> writer);
 
         string _siteDirName = "Site";
         string _htmlDirName = "Html";
@@ -180,7 +180,7 @@ namespace Ocam
             string dst = Path.Combine(dstDir, dstPart);
             var dir = new DirectoryInfo(src);
 
-            StartTemplate<StartModel> startTemplate = GetStartTemplate(src, depth);
+            StartTemplate<StartModel> startTemplate = GetStartTemplate(src);
 
             foreach (var file in dir.GetFiles())
             {
@@ -192,11 +192,11 @@ namespace Ocam
                 }
                 else if (ext == ".md" || ext == ".markdown")
                 {
-                    ProcessFile(src, dst, file.Name, write, depth, startTemplate, ProcessMarkdownFile);
+                    ProcessFile(src, dst, file.Name, write, startTemplate, ProcessMarkdownFile);
                 }
                 else if (ext == ".cshtml")
                 {
-                    ProcessFile(src, dst, file.Name, write, depth, startTemplate, ProcessRazorFile);
+                    ProcessFile(src, dst, file.Name, write, startTemplate, ProcessRazorFile);
                 }
                 else
                 {
@@ -215,7 +215,7 @@ namespace Ocam
             }
         }
 
-        void ProcessFile(string src, string dst, string file, bool write, int depth, StartTemplate<StartModel> startTemplate, FileProcessor process)
+        void ProcessFile(string src, string dst, string file, bool write, StartTemplate<StartModel> startTemplate, FileProcessor process)
         {
 #if DEBUG
 //            Console.Write(".");
@@ -232,7 +232,7 @@ namespace Ocam
                     return;
                 }
 
-                dstfile = RewriteDestinationPath(pageInfo, src, ref dst, ref file, ref depth);
+                dstfile = RewriteDestinationPath(pageInfo, src, ref dst, ref file);
 
                 Directory.CreateDirectory(dst);
 
@@ -248,7 +248,7 @@ namespace Ocam
                 };
             }
 
-            PageTemplate<PageModel> pageTemplate = process(srcfile, dstfile, depth, srcfile, startTemplate, writer);
+            PageTemplate<PageModel> pageTemplate = process(srcfile, dstfile, srcfile, startTemplate, writer);
 
             if (!write && pageTemplate.Published)
             {
@@ -258,7 +258,7 @@ namespace Ocam
                 };
 
                 string content = null;
-                PageTemplate<PageModel> excerptTemplate = process(srcfile, null, depth, srcfile + "*", contentStart, (d, r) =>
+                PageTemplate<PageModel> excerptTemplate = process(srcfile, null, srcfile + "*", contentStart, (d, r) =>
                 {
                     content = r;
                 });
@@ -303,7 +303,7 @@ namespace Ocam
                 pageInfo.Tags = pageTemplate.Tags;               // TODO: Copy
                 pageInfo.Date = date;
 
-                RewriteDestinationPath(pageInfo, src, ref dst, ref file, ref depth);
+                RewriteDestinationPath(pageInfo, src, ref dst, ref file);
 
                 // Build a URL fragment for internal linking.
                 pageInfo.Url = GetInternalUrl(dst, file);
@@ -359,7 +359,7 @@ namespace Ocam
             }
         }
 
-        StartTemplate<StartModel> GetStartTemplate(string src, int depth)
+        StartTemplate<StartModel> GetStartTemplate(string src)
         {
             string pageStart = Path.Combine(src, _config.PageStart);
             if (File.Exists(pageStart))
@@ -379,7 +379,7 @@ namespace Ocam
             StartTemplate<StartModel> startTemplate = null;
             if (_pageStartStack.Count > 0 && !String.IsNullOrWhiteSpace(_pageStartStack.Peek()))
             {
-                startTemplate = ProcessStartFile(_pageStartStack.Peek(), depth);
+                startTemplate = ProcessStartFile(_pageStartStack.Peek());
             }
 
             return startTemplate;
@@ -405,17 +405,17 @@ namespace Ocam
 
         #region Permalinks
 
-        string RewriteDestinationPath(PageInfo pageInfo, string src, ref string dst, ref string file, ref int depth)
+        string RewriteDestinationPath(PageInfo pageInfo, string src, ref string dst, ref string file)
         {
-            if (!ApplyPermalink(pageInfo, src, ref dst, ref file, ref depth))
+            if (!ApplyPermalink(pageInfo, src, ref dst, ref file))
             {
-                ApplyDefaultRewrite(pageInfo, src, ref dst, ref file, ref depth);
+                ApplyDefaultRewrite(pageInfo, src, ref dst, ref file);
             }
 
             return Path.Combine(dst, file);
         }
 
-        void ApplyDefaultRewrite(PageInfo pageInfo, string src, ref string dst, ref string file, ref int depth)
+        void ApplyDefaultRewrite(PageInfo pageInfo, string src, ref string dst, ref string file)
         {
             string name = Path.GetFileNameWithoutExtension(file);
             string index = Path.GetFileNameWithoutExtension(_config.IndexName);
@@ -428,11 +428,10 @@ namespace Ocam
                 // Create a new directory: dst/page[/index.html]
                 dst = Path.Combine(dst, name);
                 file = _config.IndexName;
-                depth++;
             }
         }
 
-        bool ApplyPermalink(PageInfo pageInfo, string src, ref string dst, ref string file, ref int depth)
+        bool ApplyPermalink(PageInfo pageInfo, string src, ref string dst, ref string file)
         {
             if (!(pageInfo is PostInfo))
             {
@@ -453,8 +452,6 @@ namespace Ocam
 
             var permalink = RewritePermalink(post, pattern, src, dst, post.Year, post.Month, post.Day);
 
-            depth = GetPermalinkSegments(permalink);
-
             // If the rewrite isn't terminated by a path separator,
             // we must truncate the path to its directory component
             // and build a new filename from the last segment.
@@ -463,7 +460,6 @@ namespace Ocam
                 int index = permalink.LastIndexOf(Path.DirectorySeparatorChar);
                 file = permalink.Substring(index + 1) + _config.Extension;
                 permalink = permalink.Substring(0, index);
-                //depth--;
             }
             else
             {
@@ -561,7 +557,7 @@ namespace Ocam
             markdown = line + reader.ReadToEnd();
         }
 
-        PageTemplate<PageModel> ProcessRazorFile(string src, string dst, int depth, string name, StartTemplate<StartModel> startTemplate, Action<string, string> writer)
+        PageTemplate<PageModel> ProcessRazorFile(string src, string dst, string name, StartTemplate<StartModel> startTemplate, Action<string, string> writer)
         {
             string cshtml;
             using (var reader = new StreamReader(src))
@@ -571,7 +567,7 @@ namespace Ocam
 
             try
             {
-                return ProcessRazorTemplate(cshtml, src, dst, depth, name, startTemplate, writer);
+                return ProcessRazorTemplate(cshtml, src, dst, name, startTemplate, writer);
             }
             catch (Exception ex)
             {
@@ -579,7 +575,7 @@ namespace Ocam
             }
         }
 
-        PageTemplate<PageModel> ProcessMarkdownFile(string src, string dst, int depth, string name, StartTemplate<StartModel> startTemplate, Action<string, string> writer)
+        PageTemplate<PageModel> ProcessMarkdownFile(string src, string dst, string name, StartTemplate<StartModel> startTemplate, Action<string, string> writer)
         {
             string front;
             string markdown;
@@ -592,7 +588,7 @@ namespace Ocam
 
             try
             {
-                return ProcessRazorTemplate(cshtml, src, dst, depth, name, startTemplate, writer);
+                return ProcessRazorTemplate(cshtml, src, dst, name, startTemplate, writer);
             }
             catch (Exception ex)
             {
@@ -600,16 +596,12 @@ namespace Ocam
             }
         }
 
-        PageTemplate<PageModel> ProcessRazorTemplate(string cshtml, string path, string dst, int depth, string name, StartTemplate<StartModel> startTemplate, Action<string, string> writer)
+        PageTemplate<PageModel> ProcessRazorTemplate(string cshtml, string path, string dst, string name, StartTemplate<StartModel> startTemplate, Action<string, string> writer)
         {
-            // Set global page depth. Lame but OK since we're single threaded.
-            if (dst != null)
-            {
-                // TODO: Remove depth parameters.
-                int depthTest = FileUtility.GetDepthFromPath(_context.DestinationDir, dst);
-                System.Diagnostics.Debug.Assert(depth == depthTest);
-            }
-            ParseState.PageDepth = depth;
+            // NOTE: On the first pass (scan), we don't have a destination.
+            if (!String.IsNullOrWhiteSpace(dst))
+                // Set global page depth. Lame but OK since we're single threaded.
+                ParseState.PageDepth = FileUtility.GetDepthFromPath(_context.DestinationDir, dst);
 
             // This model state changes from page to page.
             _pageModel.Source = FileUtility.GetRelativePath(_context.SourceDir, path);
@@ -639,7 +631,7 @@ namespace Ocam
             return pageTemplate;
         }
 
-        StartTemplate<StartModel> ProcessStartFile(string path, int depth)
+        StartTemplate<StartModel> ProcessStartFile(string path)
         {
             string cshtml;
             using (var reader = new StreamReader(path))
@@ -649,7 +641,7 @@ namespace Ocam
 
             try
             {
-                return ProcessStartFileTemplate(cshtml, path, depth);
+                return ProcessStartFileTemplate(cshtml, path);
             }
             catch (Exception ex)
             {
@@ -657,10 +649,9 @@ namespace Ocam
             }
         }
 
-        StartTemplate<StartModel> ProcessStartFileTemplate(string cshtml, string path, int depth)
+        StartTemplate<StartModel> ProcessStartFileTemplate(string cshtml, string path)
         {
-            ParseState.PageDepth = depth;
-
+            // ParseState.PageDepth = depth; // Not used by start pages.
             if (!_startTemplateService.HasTemplate(path))
                 _startTemplateService.Compile(cshtml, typeof(StartModel), path);
             var instance = _startTemplateService.GetTemplate(cshtml, new StartModel(), path);
