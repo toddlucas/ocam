@@ -17,23 +17,21 @@ namespace Ocam
         SiteConfiguration _config;
         SiteContext _context;
 
-        string _root;
         bool _disposed = false;
         Stack<string> _pageStartStack = new Stack<string>();
         Regex _pathSeparatorRegex = new Regex(Path.DirectorySeparatorChar.ToString() + Path.DirectorySeparatorChar.ToString() + "+");
         MarkdownSharp.Markdown _markdown = new MarkdownSharp.Markdown();
         RazorEngine.Templating.TemplateService _startTemplateService;
         PageModel _pageModel;
+        PluginManager _pluginManager;
         List<IGenerator> _generators;
 
         public delegate PageTemplate<PageModel> FileProcessor(string src, string dst, int depth, string name, StartTemplate<StartModel> startTemplate, Action<string, string> writer);
 
         string _siteDirName = "Site";
         string _htmlDirName = "Html";
+        string _codeDirName = "Code";
         string _templateDirName = "Templates";
-
-        string _siteRoot;
-        string _htmlRoot;
 
         public SiteProcessor()
         {
@@ -70,12 +68,7 @@ namespace Ocam
         {
             try
             {
-                _root = root;
-
-                _siteRoot = Path.Combine(_root, _siteDirName);
-                _htmlRoot = Path.Combine(_root, _htmlDirName);
-
-                var configPath = Path.Combine(_root, "Site.config");
+                var configPath = Path.Combine(root, "Site.config");
                 if (File.Exists(configPath))
                 {
                     _config = SiteConfiguration.Load(configPath);
@@ -109,10 +102,15 @@ namespace Ocam
                 {
                     Config = _config,
                     Options = options,
-                    SourceDir = _siteRoot,
-                    DestinationDir = _htmlRoot,
-                    TemplateDir = Path.Combine(_root, _templateDirName)
+                    ProjectDir = root,
+                    SourceDir = Path.Combine(root, _siteDirName),
+                    DestinationDir = Path.Combine(root, _htmlDirName),
+                    TemplateDir = Path.Combine(root, _templateDirName),
+                    CodeDir = Path.Combine(root, _codeDirName),
                 };
+
+                _pluginManager = new PluginManager(_context);
+                _pluginManager.LoadPlugins();
 
                 ProcessPages();
                 RunGenerators();
@@ -159,17 +157,21 @@ namespace Ocam
         void ProcessPages()
         {
             _pageModel = new PageModel();
-
             _markdown.Highlighter = new PassthroughHighlighter();
 
             Console.WriteLine("Scanning");
-            Walk(_root, _siteDirName, _root, _htmlDirName, false, 0);
+            string root = _context.ProjectDir;
+            _context.InitializeService();
+            Walk(root, _siteDirName, root, _htmlDirName, false, 0);
 
             _pageModel = new PageModel(_context);
+            _pluginManager.PreBuild(_pageModel);
             _markdown.Highlighter = new PygmentsHighlighter();
 
             Console.WriteLine("Building");
-            Walk(_root, _siteDirName, _root, _htmlDirName, true, 0);
+            Walk(root, _siteDirName, root, _htmlDirName, true, 0);
+
+            _pluginManager.PostBuild(_pageModel);
         }
 
         void Walk(string srcDir, string srcPart, string dstDir, string dstPart, bool write, int depth)
@@ -471,7 +473,7 @@ namespace Ocam
             }
 
             // Apply the rewrite.
-            dst = _htmlRoot + permalink;
+            dst = _context.DestinationDir + permalink;
             return true;
         }
 
@@ -507,7 +509,7 @@ namespace Ocam
         string GetInternalUrl(string dst, string file)
         {
             // Build a URL fragment for internal linking.
-            string dir = FileUtility.GetRelativePath(_htmlRoot, dst);
+            string dir = FileUtility.GetRelativePath(_context.DestinationDir, dst);
             if (!file.Equals(_config.IndexName, StringComparison.OrdinalIgnoreCase) || _config.Local)
                 dir = Path.Combine(dir, file);
             
@@ -603,13 +605,14 @@ namespace Ocam
             // Set global page depth. Lame but OK since we're single threaded.
             if (dst != null)
             {
-                int depthTest = FileUtility.GetDepthFromPath(_htmlRoot, dst);
+                // TODO: Remove depth parameters.
+                int depthTest = FileUtility.GetDepthFromPath(_context.DestinationDir, dst);
                 System.Diagnostics.Debug.Assert(depth == depthTest);
             }
             ParseState.PageDepth = depth;
 
             // This model state changes from page to page.
-            _pageModel.Source = FileUtility.GetRelativePath(_siteRoot, path);
+            _pageModel.Source = FileUtility.GetRelativePath(_context.SourceDir, path);
 
             // Create an instance of the page template for this cshtml.
             if (!_context.PageTemplateService.HasTemplate(name))

@@ -60,7 +60,7 @@ namespace Ocam
         /// <returns></returns>
         public string Href(string href)
         {
-            return FileUtility.GetContentPath(ParseState.PageDepth, href);
+            return FileUtility.GetContentUrl(ParseState.PageDepth, href);
         }
 
         /// <summary>
@@ -71,37 +71,11 @@ namespace Ocam
         /// <returns></returns>
         public string Link(string source)
         {
-            if (String.IsNullOrWhiteSpace(source))
-                throw new ArgumentException("source");
-
             var model = Model as PageModel;
             if (model == null)
                 return source;
 
-#if true
-            string path = source.Replace('/', Path.DirectorySeparatorChar);
-            if (path.First() == '~')
-                path = path.Substring(1);
-            if (path.First() == Path.DirectorySeparatorChar)
-                path = path.Substring(1);
-            if (!model.PageMap.ContainsKey(path))
-                return source;
-            var pageInfo = model.PageMap[path];
-#else
-            if (ParseState.PageMap == null)
-                return source;
-
-            string path = source.Replace('/', Path.DirectorySeparatorChar);
-            if (path.First() == '~')
-                path = path.Substring(1);
-            if (path.First() == Path.DirectorySeparatorChar)
-                path = path.Substring(1);
-            path = ParseState.PageBase + Path.DirectorySeparatorChar + path;
-            if (!ParseState.PageMap.ContainsKey(path))
-                return source;
-            var pageInfo = ParseState.PageMap[path];
-#endif
-            return Href("~/" + pageInfo.Url);
+            return FileUtility.GetInternalUrl(model.PageMap, ParseState.PageDepth, source);
         }
     }
 }

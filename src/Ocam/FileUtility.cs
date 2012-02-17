@@ -75,7 +75,7 @@ namespace Ocam
             return GetPathSegmentCount(GetRelativePath(basePath, fullPath));
         }
 
-        public static string GetContentPath(int depth, string href)
+        public static string GetContentUrl(int depth, string href)
         {
             if (depth < 0)
                 throw new Exception("Depth must be non-negative.");
@@ -104,6 +104,23 @@ namespace Ocam
             }
 
             return href;
+        }
+
+        public static string GetInternalUrl(Dictionary<string, PageInfo> pageMap, int depth, string source)
+        {
+            if (String.IsNullOrWhiteSpace(source))
+                throw new ArgumentException("source");
+
+            string path = source.Replace('/', Path.DirectorySeparatorChar);
+            if (path.First() == '~')
+                path = path.Substring(1);
+            if (path.First() == Path.DirectorySeparatorChar)
+                path = path.Substring(1);
+            if (!pageMap.ContainsKey(path))
+                return source;
+            var pageInfo = pageMap[path];
+
+            return GetContentUrl(depth, "~/" + pageInfo.Url);
         }
 
         public static string EncodePathSegment(string segment, bool uri)
