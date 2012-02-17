@@ -68,7 +68,7 @@ namespace Ocam
 
         void GenerateContent(ISiteContext context, PageModel model, string path, string segment, string name, List<PageInfo> list, int itemsPerPage)
         {
-            int pages = (list.Count + itemsPerPage - 1) / itemsPerPage;
+            int pages = PaginatorInfo.PageCount(itemsPerPage, list.Count);
             for (int page = 0; page < pages; page++)
             {
                 GeneratePage(context, model, path, segment, name, list, page, page * itemsPerPage, itemsPerPage);

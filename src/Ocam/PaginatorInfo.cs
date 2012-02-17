@@ -37,10 +37,16 @@ namespace Ocam
                 Prev = First;
             }
 
-            if (page + 1 < count)
+            int total = PageCount(take, count);
+            if (page + 1 < total)
             {
                 Next = String.Format(format, page + 1);
             }
+        }
+
+        public static int PageCount(int take, int items)
+        {
+            return (items + take - 1) / take;
         }
     }
 }
