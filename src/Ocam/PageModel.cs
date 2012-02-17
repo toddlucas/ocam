@@ -22,6 +22,8 @@ namespace Ocam
 
         public string Source { get; set; }
 
+        public Dictionary<string, object> Arguments { get; set; }
+
         public PageModel()
         {
             // Provide non-null defaults for first pass.

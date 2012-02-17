@@ -15,7 +15,7 @@ namespace Ocam
     public class ArchiveGenerator : IGenerator
     {
         ArchiveType _type;
-        string _cshtml;
+        TemplateProcessor<PageModel> _template;
 
         public ArchiveGenerator(ArchiveType type)
         {
@@ -53,13 +53,8 @@ namespace Ocam
                 return;
             }
 
-            using (var reader = new StreamReader(templatePath))
-            {
-                _cshtml = reader.ReadToEnd();
-            }
-
-            if (!context.PageTemplateService.HasTemplate(templatePath))
-                context.PageTemplateService.Compile(_cshtml, typeof(PageModel), templatePath);
+            _template = new TemplateProcessor<PageModel>(context, templatePath);
+            _template.Load();
 
             string dir = Path.Combine(context.DestinationDir, segment);
 
@@ -85,7 +80,6 @@ namespace Ocam
             string format = FileUtility.GetArchiveUrl(context, segment, name, "{0}");
             string first = FileUtility.GetArchiveUrl(context, segment, name);
             string file = FileUtility.GetArchivePath(context, segment, name, false, page);
-            ParseState.PageDepth = FileUtility.GetDepthFromPath(context.DestinationDir, file);
 
             // Provide a default list to the template. The template 
             // may present their own ordering using skip/take.
@@ -97,19 +91,11 @@ namespace Ocam
 
             model.Paginator = new PaginatorInfo(pages, page, list.Count, skip, take, first, format);
 
-            var instance = context.PageTemplateService.GetTemplate(_cshtml, model, path);
-
-            var executeContext = new RazorEngine.Templating.ExecuteContext();
-
-            executeContext.ViewBag.ArchiveName = name;
-            executeContext.ViewBag.ArchiveType = _type.ToString();
-
-            string result = instance.Run(executeContext);
-
-            string dest = Path.GetDirectoryName(file);
-            Directory.CreateDirectory(dest);
-
-            File.WriteAllText(file, result);
+            string result = _template.Build(model, file, true, (ctx) =>
+                {
+                    ctx.ViewBag.ArchiveName = name;
+                    ctx.ViewBag.ArchiveType = _type.ToString();
+                });
         }
     }
 }
