@@ -19,7 +19,6 @@ namespace Ocam
         {
             FileInfo sourceFile = new FileInfo(sourceName);
             CodeDomProvider provider = null;
-            bool compileOk = false;
 
             // Select the code provider based on the input file extension.
             if (sourceFile.Extension.ToUpper(CultureInfo.InvariantCulture) == ".CS")
@@ -69,32 +68,17 @@ namespace Ocam
             // Invoke compilation of the source file.
             CompilerResults cr = provider.CompileAssemblyFromFile(cp, sourceName);
 
-            if (cr.Errors.Count > 0)
+            bool compileOk = cr.Errors.Count == 0;
+            if (!compileOk)
             {
                 // Display compilation errors.
-                Console.WriteLine("Errors building {0} into {1}",
+                Console.Error.WriteLine("Errors building {0} into {1}",
                     sourceName, cr.PathToAssembly);
                 foreach (CompilerError ce in cr.Errors)
                 {
-                    Console.WriteLine("  {0}", ce.ToString());
-                    Console.WriteLine();
+                    Console.Error.WriteLine("  {0}", ce.ToString());
+                    Console.Error.WriteLine();
                 }
-            }
-            else
-            {
-                // Display a successful compilation message.
-                Console.WriteLine("Source {0} built into {1} successfully.",
-                    sourceName, cr.PathToAssembly);
-            }
-
-            // Return the results of the compilation.
-            if (cr.Errors.Count > 0)
-            {
-                compileOk = false;
-            }
-            else
-            {
-                compileOk = true;
             }
 
             return compileOk;

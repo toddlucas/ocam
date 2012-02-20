@@ -7,11 +7,6 @@ using System.Text.RegularExpressions;
 
 namespace Ocam
 {
-    class ParseState
-    {
-        public static int PageDepth { get; set; }
-    }
-
     class SiteProcessor : IDisposable
     {
         SiteConfiguration _config;
@@ -31,7 +26,9 @@ namespace Ocam
         string _siteDirName = "Site";
         string _htmlDirName = "Html";
         string _codeDirName = "Code";
-        string _templateDirName = "Templates";
+        string _layoutsDirName = "Layouts";
+        string _includesDirName = "Includes";
+        string _templatesDirName = "Templates";
 
         public SiteProcessor()
         {
@@ -78,8 +75,21 @@ namespace Ocam
                     _config = new SiteConfiguration();
                 }
 
-                var resolver = new TemplateResolver();
-                var activator = new TemplateActivator(_config);
+                _context = new SiteContext()
+                {
+                    Config = _config,
+                    Options = options,
+                    ProjectDir = root,
+                    SourceDir = Path.Combine(root, _siteDirName),
+                    DestinationDir = Path.Combine(root, _htmlDirName),
+                    CodeDir = Path.Combine(root, _codeDirName),
+                    LayoutsDir = Path.Combine(root, _layoutsDirName),
+                    IncludesDir = Path.Combine(root, _includesDirName),
+                    TemplatesDir = Path.Combine(root, _templatesDirName),
+                };
+
+                var resolver = new TemplateResolver(_context);
+                var activator = new TemplateActivator(_context);
 
                 var pageConfiguration = new RazorEngine.Configuration.TemplateServiceConfiguration()
                 {
@@ -98,19 +108,10 @@ namespace Ocam
                 // _pageTemplateService = new RazorEngine.Templating.TemplateService(pageConfiguration);
                 _startTemplateService = new RazorEngine.Templating.TemplateService(startConfiguration);
 
-                _context = new SiteContext(pageConfiguration)
-                {
-                    Config = _config,
-                    Options = options,
-                    ProjectDir = root,
-                    SourceDir = Path.Combine(root, _siteDirName),
-                    DestinationDir = Path.Combine(root, _htmlDirName),
-                    TemplateDir = Path.Combine(root, _templateDirName),
-                    CodeDir = Path.Combine(root, _codeDirName),
-                };
-
                 _pluginManager = new PluginManager(_context);
                 _pluginManager.LoadPlugins();
+
+                _context.InitializeService(pageConfiguration);
 
                 ProcessPages();
                 RunGenerators();
@@ -161,7 +162,6 @@ namespace Ocam
 
             Console.WriteLine("Scanning");
             string root = _context.ProjectDir;
-            _context.InitializeService();
             Walk(root, _siteDirName, root, _htmlDirName, false, 0);
 
             _pageModel = new PageModel(_context);
@@ -232,9 +232,14 @@ namespace Ocam
                     return;
                 }
 
+#if true
+                dstfile = pageInfo.GetDestinationPath(_context, src, dst, file);
+#else
                 dstfile = RewriteDestinationPath(pageInfo, src, ref dst, ref file);
+#endif
 
-                Directory.CreateDirectory(dst);
+                string dstdir = Path.GetDirectoryName(dstfile);
+                Directory.CreateDirectory(dstdir);
 
                 if (_context.Options.Verbose)
                     Console.WriteLine(dstfile);
@@ -303,10 +308,14 @@ namespace Ocam
                 pageInfo.Tags = pageTemplate.Tags;               // TODO: Copy
                 pageInfo.Date = date;
 
-                RewriteDestinationPath(pageInfo, src, ref dst, ref file);
+#if true
+                dstfile = pageInfo.GetDestinationPath(_context, src, dst, file);
+#else
+                dstfile = RewriteDestinationPath(pageInfo, src, ref dst, ref file);
+#endif
 
                 // Build a URL fragment for internal linking.
-                pageInfo.Url = GetInternalUrl(dst, file);
+                pageInfo.Url = FileUtility.GetInternalUrl(_context, dstfile);
 
                 AddCategories(pageInfo, pageTemplate.Categories);
                 AddTags(pageInfo, pageTemplate.Tags);
@@ -403,125 +412,6 @@ namespace Ocam
 
         #endregion General
 
-        #region Permalinks
-
-        string RewriteDestinationPath(PageInfo pageInfo, string src, ref string dst, ref string file)
-        {
-            if (!ApplyPermalink(pageInfo, src, ref dst, ref file))
-            {
-                ApplyDefaultRewrite(pageInfo, src, ref dst, ref file);
-            }
-
-            return Path.Combine(dst, file);
-        }
-
-        void ApplyDefaultRewrite(PageInfo pageInfo, string src, ref string dst, ref string file)
-        {
-            string name = Path.GetFileNameWithoutExtension(file);
-            string index = Path.GetFileNameWithoutExtension(_config.IndexName);
-            if (name == index || !pageInfo.Rebase)
-            {
-                file = name + _config.Extension;
-            }
-            else
-            {
-                // Create a new directory: dst/page[/index.html]
-                dst = Path.Combine(dst, name);
-                file = _config.IndexName;
-            }
-        }
-
-        bool ApplyPermalink(PageInfo pageInfo, string src, ref string dst, ref string file)
-        {
-            if (!(pageInfo is PostInfo))
-            {
-                return false;
-            }
-
-            var post = pageInfo as PostInfo;
-
-            if (String.IsNullOrWhiteSpace(pageInfo.Permalink) &&
-                String.IsNullOrWhiteSpace(_config.Permalink))
-            {
-                return false;
-            }
-
-            string pattern = String.IsNullOrWhiteSpace(pageInfo.Permalink)
-                ? _config.Permalink
-                : pageInfo.Permalink;
-
-            var permalink = RewritePermalink(post, pattern, src, dst, post.Year, post.Month, post.Day);
-
-            // If the rewrite isn't terminated by a path separator,
-            // we must truncate the path to its directory component
-            // and build a new filename from the last segment.
-            if (permalink.Last() != Path.DirectorySeparatorChar)
-            {
-                int index = permalink.LastIndexOf(Path.DirectorySeparatorChar);
-                file = permalink.Substring(index + 1) + _config.Extension;
-                permalink = permalink.Substring(0, index);
-            }
-            else
-            {
-                // Remove final separator, just for uniformity.
-                permalink = permalink.Substring(0, permalink.Length - 1);
-                file = _config.IndexName;
-            }
-
-            // Apply the rewrite.
-            dst = _context.DestinationDir + permalink;
-            return true;
-        }
-
-        string RewritePermalink(PostInfo postInfo, string pattern, string src, string dst, int year, int month, int day)
-        {
-            // Normalize to the filesystem path separator.
-            pattern = pattern.Replace('/', Path.DirectorySeparatorChar);
-
-            string permalink = pattern
-                .Replace("{year}", year == 0 ? String.Empty : year.ToString())
-                .Replace("{month}", month == 0 ? String.Empty : month.ToString())
-                .Replace("{day}", day == 0 ? String.Empty : day.ToString())
-                .Replace("{category}", GetDefaultCategorySegment(postInfo))
-                .Replace("{title}", postInfo.Slug);
-
-            // Remove any empty path segments.
-            permalink = _pathSeparatorRegex.Replace(permalink, Path.DirectorySeparatorChar.ToString());
-
-            // Ensure it starts with a separator, so segment (depth) count is uniform.
-            if (permalink.First() != Path.DirectorySeparatorChar)
-            {
-                permalink = Path.DirectorySeparatorChar.ToString() + permalink;
-            }
-
-            return permalink;
-        }
-
-        int GetPermalinkSegments(string permalink)
-        {
-            return permalink.Where(c => c == Path.DirectorySeparatorChar).Count() - 1;
-        }
-
-        string GetInternalUrl(string dst, string file)
-        {
-            // Build a URL fragment for internal linking.
-            string dir = FileUtility.GetRelativePath(_context.DestinationDir, dst);
-            if (!file.Equals(_config.IndexName, StringComparison.OrdinalIgnoreCase) || _config.Local)
-                dir = Path.Combine(dir, file);
-            
-            return dir.Replace(Path.DirectorySeparatorChar, '/');
-        }
-
-        string GetDefaultCategorySegment(PageInfo pageInfo)
-        {
-            // FIXME: Escape invalid path characters.
-            return pageInfo.Categories == null ?
-                String.Empty :
-                pageInfo.Categories[0]; // Use the first category
-        }
-
-        #endregion Permalinks
-
         #region Templates
 
         void ReadMarkdown(StreamReader reader, out string front, out string markdown)
@@ -601,7 +491,9 @@ namespace Ocam
             // NOTE: On the first pass (scan), we don't have a destination.
             if (!String.IsNullOrWhiteSpace(dst))
                 // Set global page depth. Lame but OK since we're single threaded.
-                ParseState.PageDepth = FileUtility.GetDepthFromPath(_context.DestinationDir, dst);
+                _context.PageDepth = FileUtility.GetDepthFromPath(_context.DestinationDir, dst);
+            else
+                _context.PageDepth = 0;
 
             // This model state changes from page to page.
             _pageModel.Source = FileUtility.GetRelativePath(_context.SourceDir, path);

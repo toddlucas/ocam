@@ -20,25 +20,25 @@ namespace Ocam
         public string ProjectDir { get; set; }
         public string SourceDir { get; set; }
         public string DestinationDir { get; set; }
-        public string TemplateDir { get; set; }
         public string CodeDir { get; set; }
+        public string LayoutsDir { get; set; }
+        public string IncludesDir { get; set; }
+        public string TemplatesDir { get; set; }
 
         public TemplateService PageTemplateService { get; private set; }
 
-        TemplateServiceConfiguration _pageConfiguration;
+        public int PageDepth { get; set; }
 
-        public SiteContext(TemplateServiceConfiguration pageConfiguration)
+        public SiteContext()
         {
-            _pageConfiguration = pageConfiguration;
-
             PageMap = new Dictionary<string, PageInfo>(StringComparer.OrdinalIgnoreCase);
             Categories = new Dictionary<string, List<PageInfo>>(StringComparer.OrdinalIgnoreCase);
             Tags = new Dictionary<string, List<PageInfo>>(StringComparer.OrdinalIgnoreCase);
         }
 
-        public void InitializeService()
+        public void InitializeService(TemplateServiceConfiguration pageConfiguration)
         {
-            PageTemplateService = new RazorEngine.Templating.TemplateService(_pageConfiguration);
+            PageTemplateService = new RazorEngine.Templating.TemplateService(pageConfiguration);
         }
     }
 }

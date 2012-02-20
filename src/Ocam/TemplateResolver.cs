@@ -8,6 +8,13 @@ namespace Ocam
 {
     class TemplateResolver : ITemplateResolver
     {
+        ISiteContext _context;
+
+        public TemplateResolver(ISiteContext context)
+        {
+            _context = context;
+        }
+
         public string Resolve(string name)
         {
             // NOTE: We don't know whether this is being invoked by a call
@@ -16,10 +23,10 @@ namespace Ocam
             string[] candidates = 
             {
                 name,
-                Path.Combine("Layouts", name),
-                Path.Combine("Layouts", name + ".cshtml"),
-                Path.Combine("Includes", name),
-                Path.Combine("Includes", name + ".cshtml")
+                Path.Combine(_context.LayoutsDir, name),
+                Path.Combine(_context.LayoutsDir, name + ".cshtml"),
+                Path.Combine(_context.IncludesDir, name),
+                Path.Combine(_context.IncludesDir, name + ".cshtml")
             };
 
             foreach (var path in candidates)

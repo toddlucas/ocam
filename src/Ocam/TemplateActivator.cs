@@ -8,11 +8,11 @@ namespace Ocam
 {
     public class TemplateActivator : IActivator
     {
-        SiteConfiguration _config;
+        ISiteContext _context;
 
-        public TemplateActivator(SiteConfiguration config)
+        public TemplateActivator(ISiteContext context)
         {
-            _config = config;
+            _context = context;
         }
 
         public ITemplate CreateInstance(InstanceContext context)
@@ -24,7 +24,7 @@ namespace Ocam
             var configurable = instance as IConfigurable;
             if (configurable != null)
             {
-                configurable.Configure(_config);
+                configurable.Configure(_context);
             }
             return instance;
         }

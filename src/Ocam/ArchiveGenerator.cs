@@ -46,7 +46,7 @@ namespace Ocam
                 segment = context.Config.TagDir;
             }
 
-            string templatePath = Path.Combine(context.TemplateDir, template);
+            string templatePath = Path.Combine(context.TemplatesDir, template);
             if (!File.Exists(templatePath))
             {
                 Console.WriteLine("Warning: Template '{0}' not found.", template);

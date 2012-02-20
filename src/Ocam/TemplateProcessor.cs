@@ -31,7 +31,7 @@ namespace Ocam
 
         public string Build(T model, string file, bool mkdir, Action<RazorEngine.Templating.ExecuteContext> prepare = null)
         {
-            ParseState.PageDepth = FileUtility.GetDepthFromPath(_context.DestinationDir, file);
+            _context.PageDepth = FileUtility.GetDepthFromPath(_context.DestinationDir, file);
             string result = Build(model, prepare);
             if (mkdir)
             {

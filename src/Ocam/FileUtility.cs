@@ -75,6 +75,10 @@ namespace Ocam
             return GetPathSegmentCount(GetRelativePath(basePath, fullPath));
         }
 
+        /// <summary>
+        /// Builds a relative URL, replacing ~/ with relative path
+        /// segments (../) based on the depth of the referencing page.
+        /// </summary>
         public static string GetContentUrl(int depth, string href)
         {
             if (depth < 0)
@@ -106,7 +110,11 @@ namespace Ocam
             return href;
         }
 
-        public static string GetInternalUrl(Dictionary<string, PageInfo> pageMap, int depth, string source)
+        /// <summary>
+        /// Converts a source path to a destination URL that's relative to the
+        /// current page's depth.
+        /// </summary>
+        public static string GetDestinationUrl(Dictionary<string, PageInfo> pageMap, int depth, string source)
         {
             if (String.IsNullOrWhiteSpace(source))
                 throw new ArgumentException("source");
@@ -121,6 +129,23 @@ namespace Ocam
             var pageInfo = pageMap[path];
 
             return GetContentUrl(depth, "~/" + pageInfo.Url);
+        }
+
+        /// <summary>
+        /// Given the full path to a destination file, returns a relative
+        /// URL. Does not include index files if config Local is false.
+        /// </summary>
+        public static string GetInternalUrl(ISiteContext context, string path)
+        {
+            string dst = Path.GetDirectoryName(path);
+            string file = Path.GetFileName(path);
+
+            // Build a URL fragment for internal linking.
+            string dir = FileUtility.GetRelativePath(context.DestinationDir, dst);
+            if (!file.Equals(context.Config.IndexName, StringComparison.OrdinalIgnoreCase) || context.Config.Local)
+                dir = Path.Combine(dir, file);
+
+            return dir.Replace(Path.DirectorySeparatorChar, '/');
         }
 
         public static string EncodePathSegment(string segment, bool uri)

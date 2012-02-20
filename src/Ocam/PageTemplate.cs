@@ -10,7 +10,7 @@ namespace Ocam
     // Used by the template activator to pass configuration to the page template.
     public interface IConfigurable
     {
-        void Configure(SiteConfiguration config);
+        void Configure(ISiteContext context);
     }
 
     public class PageTemplate<T> : TemplateBase<T>, IConfigurable
@@ -42,14 +42,17 @@ namespace Ocam
 
         public string Excerpt { get; set; }
 
+        int _pageDepth;
+
         public PageTemplate()
         {
             Published = true;
         }
 
-        public virtual void Configure(SiteConfiguration config)
+        public virtual void Configure(ISiteContext context)
         {
-            Rebase = config.Rebase; // Initialize to site default.
+            Rebase = context.Config.Rebase; // Initialize to site default.
+            _pageDepth = context.PageDepth;
         }
 
         /// <summary>
@@ -60,7 +63,7 @@ namespace Ocam
         /// <returns></returns>
         public string Href(string href)
         {
-            return FileUtility.GetContentUrl(ParseState.PageDepth, href);
+            return FileUtility.GetContentUrl(_pageDepth, href);
         }
 
         /// <summary>
@@ -75,7 +78,7 @@ namespace Ocam
             if (model == null)
                 return source;
 
-            return FileUtility.GetInternalUrl(model.PageMap, ParseState.PageDepth, source);
+            return FileUtility.GetDestinationUrl(model.PageMap, _pageDepth, source);
         }
     }
 }

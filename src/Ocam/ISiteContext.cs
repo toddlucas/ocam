@@ -11,9 +11,14 @@ namespace Ocam
         Dictionary<string, PageInfo> PageMap { get;  }
         Dictionary<string, List<PageInfo>> Categories { get; }
         Dictionary<string, List<PageInfo>> Tags { get; }
+        string ProjectDir { get; }
         string SourceDir { get; }
         string DestinationDir { get; }
-        string TemplateDir { get; }
+        string CodeDir { get; }
+        string LayoutsDir { get; }
+        string IncludesDir { get; }
+        string TemplatesDir { get; }
         RazorEngine.Templating.TemplateService PageTemplateService { get; }
+        int PageDepth { get; set; }
     }
 }
