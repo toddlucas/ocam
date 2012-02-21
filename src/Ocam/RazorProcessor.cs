@@ -50,6 +50,13 @@ namespace Ocam
             // This model state changes from page to page.
             model.Source = FileUtility.GetRelativePath(_context.SourceDir, path);
 
+            // The page may reference it's own info.
+            if (_context.PageMap.ContainsKey(model.Source))
+                model.PageInfo = _context.PageMap[model.Source];
+            else
+                // Provide a default on the scan pass to obviate null checks.
+                model.PageInfo = new PageInfo();
+
             // Create an instance of the page template for this cshtml.
             if (!_context.PageTemplateService.HasTemplate(name))
                 _context.PageTemplateService.Compile(cshtml, typeof(PageModel), name);

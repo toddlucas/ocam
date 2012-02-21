@@ -30,6 +30,12 @@ namespace Ocam
                 throw new Exception("ItemsPerPage must be a positive number.");
             }
 
+            if (!Directory.Exists(context.TemplatesDir))
+            {
+                Console.WriteLine("Templates directory not found.");
+                return;
+            }
+
             string template;
             string segment;
             Dictionary<string, List<PageInfo>> list;

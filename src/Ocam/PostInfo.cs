@@ -69,9 +69,9 @@ namespace Ocam
             pattern = pattern.Replace('/', Path.DirectorySeparatorChar);
 
             string permalink = pattern
-                .Replace("{year}", year == 0 ? String.Empty : year.ToString())
-                .Replace("{month}", month == 0 ? String.Empty : month.ToString())
-                .Replace("{day}", day == 0 ? String.Empty : day.ToString())
+                .Replace("{year}", year == 0 ? String.Empty : year.ToString("D4"))
+                .Replace("{month}", month == 0 ? String.Empty : month.ToString("D2"))
+                .Replace("{day}", day == 0 ? String.Empty : day.ToString("D2"))
                 .Replace("{category}", GetDefaultCategorySegment())
                 .Replace("{title}", this.Slug);
 

@@ -20,6 +20,7 @@ namespace Ocam
 
         public PaginatorInfo Paginator { get; set; }
 
+        public PageInfo PageInfo { get; set; }
         public string Source { get; set; }
 
         public Dictionary<string, object> Arguments { get; set; }

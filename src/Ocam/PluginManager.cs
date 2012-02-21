@@ -18,6 +18,9 @@ namespace Ocam
 
         public void LoadPlugins()
         {
+            if (!Directory.Exists(_context.CodeDir))
+                return;
+
             var domain = AppDomain.CurrentDomain;
             string[] assemblies = domain.GetAssemblies()
                 .Where(a => !a.IsDynamic)
