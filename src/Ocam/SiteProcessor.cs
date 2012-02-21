@@ -126,8 +126,8 @@ namespace Ocam
                         string[] lines = ex.Text.Split('\n');
                         Console.Error.WriteLine("{0}({1}): {2}", ex.FileName, err.Line, err.ErrorText);
 
-                        // FIXME: The underlying file that caused the error 
-                        // is gone at this point.
+                        // FIXME: The underlying generated file that caused 
+                        // the error is gone at this point.
                         // Console.Error.WriteLine("{0}", GetErrorLines(err));
                     }
                 }
@@ -154,18 +154,18 @@ namespace Ocam
         void ProcessPages()
         {
             _pageModel = new PageModel();
-
-            _razorProcessor = new RazorProcessor(_context, _pageModel);
-            _markdownProcessor = new MarkdownProcessor(_context, _pageModel);
-
+            _razorProcessor = new RazorProcessor(_context);
+            _markdownProcessor = new MarkdownProcessor(_context);
             _markdownProcessor.StartScan();
+
             Console.WriteLine("Scanning");
             string root = _context.ProjectDir;
             Walk(root, _siteDirName, root, _htmlDirName, false, 0);
 
             _pageModel = new PageModel(_context);
-            _pluginManager.PreBuild(_pageModel);
             _markdownProcessor.StartBuild();
+
+            _pluginManager.PreBuild(_pageModel);
 
             Console.WriteLine("Building");
             Walk(root, _siteDirName, root, _htmlDirName, true, 0);
@@ -231,11 +231,7 @@ namespace Ocam
                     return;
                 }
 
-#if true
                 dstfile = pageInfo.GetDestinationPath(_context, src, dst, file);
-#else
-                dstfile = RewriteDestinationPath(pageInfo, src, ref dst, ref file);
-#endif
 
                 string dstdir = Path.GetDirectoryName(dstfile);
                 Directory.CreateDirectory(dstdir);
@@ -252,7 +248,7 @@ namespace Ocam
                 };
             }
 
-            PageTemplate<PageModel> pageTemplate = processor.ProcessFile(srcfile, dstfile, srcfile, startTemplate, writer);
+            PageTemplate<PageModel> pageTemplate = processor.ProcessFile(srcfile, dstfile, srcfile, _pageModel, startTemplate, writer);
 
             if (!write && pageTemplate.Published)
             {
@@ -263,7 +259,7 @@ namespace Ocam
                 };
 
                 string content = null;
-                PageTemplate<PageModel> excerptTemplate = processor.ProcessFile(srcfile, null, srcfile + "*", contentStart, (d, r) =>
+                PageTemplate<PageModel> excerptTemplate = processor.ProcessFile(srcfile, null, srcfile + "*", _pageModel, contentStart, (d, r) =>
                 {
                     content = r;
                 });
@@ -308,11 +304,7 @@ namespace Ocam
                 pageInfo.Tags = pageTemplate.Tags;               // TODO: Copy
                 pageInfo.Date = date;
 
-#if true
                 dstfile = pageInfo.GetDestinationPath(_context, src, dst, file);
-#else
-                dstfile = RewriteDestinationPath(pageInfo, src, ref dst, ref file);
-#endif
 
                 // Build a URL fragment for internal linking.
                 pageInfo.Url = FileUtility.GetInternalUrl(_context, dstfile);

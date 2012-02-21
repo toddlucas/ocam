@@ -8,21 +8,19 @@ namespace Ocam
 {
     interface IPageProcessor
     {
-        PageTemplate<PageModel> ProcessFile(string src, string dst, string name, StartTemplate<StartModel> startTemplate, Action<string, string> writer);
+        PageTemplate<PageModel> ProcessFile(string src, string dst, string name, PageModel model, StartTemplate<StartModel> startTemplate, Action<string, string> writer);
     }
 
     class RazorProcessor : IPageProcessor
     {
-        ISiteContext _context;
-        PageModel _pageModel;
+        protected ISiteContext _context;
 
-        public RazorProcessor(ISiteContext context, PageModel pageModel)
+        public RazorProcessor(ISiteContext context)
         {
             _context = context;
-            _pageModel = pageModel;
         }
 
-        public virtual PageTemplate<PageModel> ProcessFile(string src, string dst, string name, StartTemplate<StartModel> startTemplate, Action<string, string> writer)
+        public virtual PageTemplate<PageModel> ProcessFile(string src, string dst, string name, PageModel model, StartTemplate<StartModel> startTemplate, Action<string, string> writer)
         {
             string cshtml;
             using (var reader = new StreamReader(src))
@@ -32,7 +30,7 @@ namespace Ocam
 
             try
             {
-                return ProcessRazorTemplate(cshtml, src, dst, name, startTemplate, writer);
+                return ProcessRazorTemplate(cshtml, src, dst, name, model, startTemplate, writer);
             }
             catch (Exception ex)
             {
@@ -40,7 +38,7 @@ namespace Ocam
             }
         }
 
-        protected PageTemplate<PageModel> ProcessRazorTemplate(string cshtml, string path, string dst, string name, StartTemplate<StartModel> startTemplate, Action<string, string> writer)
+        protected PageTemplate<PageModel> ProcessRazorTemplate(string cshtml, string path, string dst, string name, PageModel model, StartTemplate<StartModel> startTemplate, Action<string, string> writer)
         {
             // NOTE: On the first pass (scan), we don't have a destination.
             if (!String.IsNullOrWhiteSpace(dst))
@@ -50,12 +48,12 @@ namespace Ocam
                 _context.PageDepth = 0;
 
             // This model state changes from page to page.
-            _pageModel.Source = FileUtility.GetRelativePath(_context.SourceDir, path);
+            model.Source = FileUtility.GetRelativePath(_context.SourceDir, path);
 
             // Create an instance of the page template for this cshtml.
             if (!_context.PageTemplateService.HasTemplate(name))
                 _context.PageTemplateService.Compile(cshtml, typeof(PageModel), name);
-            var instance = _context.PageTemplateService.GetTemplate(cshtml, _pageModel, name);
+            var instance = _context.PageTemplateService.GetTemplate(cshtml, model, name);
 
             // Apply any _PageStart defaults.
             var pageTemplate = instance as PageTemplate<PageModel>;

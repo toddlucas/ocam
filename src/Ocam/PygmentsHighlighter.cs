@@ -42,8 +42,15 @@ namespace Ocam
     {
         public bool Highlight(string text, string syntax, out string highlighted)
         {
+            // Escape HTML entities.
+            text = text.Replace("&", "&amp;");
+            text = text.Replace("<", "&lt;");
+            text = text.Replace(">", "&gt;");
+
             // Escape the Razor prefix token.
-            highlighted = text.Replace("@", "@@");
+            text = text.Replace("@", "@@");
+
+            highlighted = String.Concat("<div class=\"highlight\"><pre>", text, "\n</pre></div>");
             return true;
         }
     }

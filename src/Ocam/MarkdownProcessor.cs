@@ -10,8 +10,8 @@ namespace Ocam
     {
         MarkdownSharp.Markdown _markdown = new MarkdownSharp.Markdown();
 
-        public MarkdownProcessor(ISiteContext context, PageModel pageModel)
-            : base(context, pageModel)
+        public MarkdownProcessor(ISiteContext context)
+            : base(context)
         {
         }
 
@@ -22,10 +22,13 @@ namespace Ocam
 
         public void StartBuild()
         {
-            _markdown.Highlighter = new PygmentsHighlighter();
+            if (_context.Config.UsePygments)
+                _markdown.Highlighter = new PygmentsHighlighter();
+            else
+                _markdown.Highlighter = new PassthroughHighlighter();
         }
 
-        public override PageTemplate<PageModel> ProcessFile(string src, string dst, string name, StartTemplate<StartModel> startTemplate, Action<string, string> writer)
+        public override PageTemplate<PageModel> ProcessFile(string src, string dst, string name, PageModel model, StartTemplate<StartModel> startTemplate, Action<string, string> writer)
         {
             string front;
             string markdown;
@@ -38,7 +41,7 @@ namespace Ocam
 
             try
             {
-                return ProcessRazorTemplate(cshtml, src, dst, name, startTemplate, writer);
+                return ProcessRazorTemplate(cshtml, src, dst, name, model, startTemplate, writer);
             }
             catch (Exception ex)
             {
