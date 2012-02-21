@@ -13,15 +13,13 @@ namespace Ocam
         SiteContext _context;
 
         bool _disposed = false;
-        Stack<string> _pageStartStack = new Stack<string>();
         Regex _pathSeparatorRegex = new Regex(Path.DirectorySeparatorChar.ToString() + Path.DirectorySeparatorChar.ToString() + "+");
-        MarkdownSharp.Markdown _markdown = new MarkdownSharp.Markdown();
-        RazorEngine.Templating.TemplateService _startTemplateService;
         PageModel _pageModel;
         PluginManager _pluginManager;
         List<IGenerator> _generators;
-
-        public delegate PageTemplate<PageModel> FileProcessor(string src, string dst, string name, StartTemplate<StartModel> startTemplate, Action<string, string> writer);
+        StartProcessor _startProcessor;
+        RazorProcessor _razorProcessor;
+        MarkdownProcessor _markdownProcessor;
 
         string _siteDirName = "Site";
         string _htmlDirName = "Html";
@@ -53,7 +51,7 @@ namespace Ocam
                 {
                     // Managed resources
                     _context.PageTemplateService.Dispose();
-                    _startTemplateService.Dispose();
+                    _startProcessor.Dispose();
                 }
 
                 // Unmanaged resources
@@ -105,12 +103,10 @@ namespace Ocam
                     Activator = activator
                 };
 
-                // _pageTemplateService = new RazorEngine.Templating.TemplateService(pageConfiguration);
-                _startTemplateService = new RazorEngine.Templating.TemplateService(startConfiguration);
-
                 _pluginManager = new PluginManager(_context);
                 _pluginManager.LoadPlugins();
 
+                _startProcessor = new StartProcessor(_context, startConfiguration);
                 _context.InitializeService(pageConfiguration);
 
                 ProcessPages();
@@ -158,15 +154,18 @@ namespace Ocam
         void ProcessPages()
         {
             _pageModel = new PageModel();
-            _markdown.Highlighter = new PassthroughHighlighter();
 
+            _razorProcessor = new RazorProcessor(_context, _pageModel);
+            _markdownProcessor = new MarkdownProcessor(_context, _pageModel);
+
+            _markdownProcessor.StartScan();
             Console.WriteLine("Scanning");
             string root = _context.ProjectDir;
             Walk(root, _siteDirName, root, _htmlDirName, false, 0);
 
             _pageModel = new PageModel(_context);
             _pluginManager.PreBuild(_pageModel);
-            _markdown.Highlighter = new PygmentsHighlighter();
+            _markdownProcessor.StartBuild();
 
             Console.WriteLine("Building");
             Walk(root, _siteDirName, root, _htmlDirName, true, 0);
@@ -180,7 +179,7 @@ namespace Ocam
             string dst = Path.Combine(dstDir, dstPart);
             var dir = new DirectoryInfo(src);
 
-            StartTemplate<StartModel> startTemplate = GetStartTemplate(src);
+            StartTemplate<StartModel> startTemplate = _startProcessor.GetStartTemplate(src);
 
             foreach (var file in dir.GetFiles())
             {
@@ -192,11 +191,11 @@ namespace Ocam
                 }
                 else if (ext == ".md" || ext == ".markdown")
                 {
-                    ProcessFile(src, dst, file.Name, write, startTemplate, ProcessMarkdownFile);
+                    ProcessFile(src, dst, file.Name, write, startTemplate, _markdownProcessor);
                 }
                 else if (ext == ".cshtml")
                 {
-                    ProcessFile(src, dst, file.Name, write, startTemplate, ProcessRazorFile);
+                    ProcessFile(src, dst, file.Name, write, startTemplate, _razorProcessor);
                 }
                 else
                 {
@@ -215,7 +214,7 @@ namespace Ocam
             }
         }
 
-        void ProcessFile(string src, string dst, string file, bool write, StartTemplate<StartModel> startTemplate, FileProcessor process)
+        void ProcessFile(string src, string dst, string file, bool write, StartTemplate<StartModel> startTemplate, IPageProcessor processor)
         {
 #if DEBUG
 //            Console.Write(".");
@@ -253,17 +252,18 @@ namespace Ocam
                 };
             }
 
-            PageTemplate<PageModel> pageTemplate = process(srcfile, dstfile, srcfile, startTemplate, writer);
+            PageTemplate<PageModel> pageTemplate = processor.ProcessFile(srcfile, dstfile, srcfile, startTemplate, writer);
 
             if (!write && pageTemplate.Published)
             {
+                // Force the use of an empty layout to get the just the content.
                 var contentStart = new StartTemplate<StartModel>()
                 {
                     ForceLayout = true
                 };
 
                 string content = null;
-                PageTemplate<PageModel> excerptTemplate = process(srcfile, null, srcfile + "*", contentStart, (d, r) =>
+                PageTemplate<PageModel> excerptTemplate = processor.ProcessFile(srcfile, null, srcfile + "*", contentStart, (d, r) =>
                 {
                     content = r;
                 });
@@ -368,32 +368,6 @@ namespace Ocam
             }
         }
 
-        StartTemplate<StartModel> GetStartTemplate(string src)
-        {
-            string pageStart = Path.Combine(src, _config.PageStart);
-            if (File.Exists(pageStart))
-            {
-                _pageStartStack.Push(pageStart);
-            }
-            else if (_pageStartStack.Count > 0)
-            {
-                // Copy it from the parent directory.
-                _pageStartStack.Push(_pageStartStack.Peek());
-            }
-            else
-            {
-                _pageStartStack.Push(String.Empty);
-            }
-
-            StartTemplate<StartModel> startTemplate = null;
-            if (_pageStartStack.Count > 0 && !String.IsNullOrWhiteSpace(_pageStartStack.Peek()))
-            {
-                startTemplate = ProcessStartFile(_pageStartStack.Peek());
-            }
-
-            return startTemplate;
-        }
-
         string ExtractExcerpt(string content)
         {
             // TODO: Parse HTML and take first 100 words or so in a block preserving way.
@@ -411,151 +385,5 @@ namespace Ocam
         }
 
         #endregion General
-
-        #region Templates
-
-        void ReadMarkdown(StreamReader reader, out string front, out string markdown)
-        {
-            front = String.Empty;
-            markdown = String.Empty;
-
-            if (reader.EndOfStream)
-            {
-                return;
-            }
-
-            // Read front matter, if any.
-            var sb = new StringBuilder();
-            var line = reader.ReadLine();
-            if (line.Length >= 3 && line.TrimEnd() == "---")
-            {
-                line = reader.ReadLine();
-                while (!reader.EndOfStream)
-                {
-                    if (line.Length >= 3 && line.TrimEnd() == "---")
-                    {
-                        break;
-                    }
-                    sb.Append(line);
-                    line = reader.ReadLine();
-                }
-                front = sb.ToString();
-                line = String.Empty;
-            }
-
-            // The rest is Markdown.
-            markdown = line + reader.ReadToEnd();
-        }
-
-        PageTemplate<PageModel> ProcessRazorFile(string src, string dst, string name, StartTemplate<StartModel> startTemplate, Action<string, string> writer)
-        {
-            string cshtml;
-            using (var reader = new StreamReader(src))
-            {
-                cshtml = reader.ReadToEnd();
-            }
-
-            try
-            {
-                return ProcessRazorTemplate(cshtml, src, dst, name, startTemplate, writer);
-            }
-            catch (Exception ex)
-            {
-                throw new PageProcessingException("Error processing Razor file.", src, cshtml, ex);
-            }
-        }
-
-        PageTemplate<PageModel> ProcessMarkdownFile(string src, string dst, string name, StartTemplate<StartModel> startTemplate, Action<string, string> writer)
-        {
-            string front;
-            string markdown;
-            using (var reader = new StreamReader(src))
-            {
-                ReadMarkdown(reader, out front, out markdown);
-            }
-
-            string cshtml = "@{\r\n" + front + "}\r\n" + _markdown.Transform(markdown);
-
-            try
-            {
-                return ProcessRazorTemplate(cshtml, src, dst, name, startTemplate, writer);
-            }
-            catch (Exception ex)
-            {
-                throw new PageProcessingException("Error processing Markdown file.", src, cshtml, ex);
-            }
-        }
-
-        PageTemplate<PageModel> ProcessRazorTemplate(string cshtml, string path, string dst, string name, StartTemplate<StartModel> startTemplate, Action<string, string> writer)
-        {
-            // NOTE: On the first pass (scan), we don't have a destination.
-            if (!String.IsNullOrWhiteSpace(dst))
-                // Set global page depth. Lame but OK since we're single threaded.
-                _context.PageDepth = FileUtility.GetDepthFromPath(_context.DestinationDir, dst);
-            else
-                _context.PageDepth = 0;
-
-            // This model state changes from page to page.
-            _pageModel.Source = FileUtility.GetRelativePath(_context.SourceDir, path);
-
-            // Create an instance of the page template for this cshtml.
-            if (!_context.PageTemplateService.HasTemplate(name))
-                _context.PageTemplateService.Compile(cshtml, typeof(PageModel), name);
-            var instance = _context.PageTemplateService.GetTemplate(cshtml, _pageModel, name);
-
-            // Apply any _PageStart defaults.
-            var pageTemplate = instance as PageTemplate<PageModel>;
-            if (pageTemplate != null && startTemplate != null)
-            {
-                if (startTemplate.ForceLayout ||
-                    (String.IsNullOrWhiteSpace(pageTemplate.Layout) &&
-                    !String.IsNullOrWhiteSpace(startTemplate.Layout)))
-                {
-                    pageTemplate.Layout = startTemplate.Layout;
-                }
-            }
-
-            string result = _context.PageTemplateService.Run(instance);
-
-            if (writer != null)
-                writer(dst, result);
-
-            return pageTemplate;
-        }
-
-        StartTemplate<StartModel> ProcessStartFile(string path)
-        {
-            string cshtml;
-            using (var reader = new StreamReader(path))
-            {
-                cshtml = reader.ReadToEnd();
-            }
-
-            try
-            {
-                return ProcessStartFileTemplate(cshtml, path);
-            }
-            catch (Exception ex)
-            {
-                throw new PageProcessingException("Error processing start file.", path, cshtml, ex);
-            }
-        }
-
-        StartTemplate<StartModel> ProcessStartFileTemplate(string cshtml, string path)
-        {
-            // ParseState.PageDepth = depth; // Not used by start pages.
-            if (!_startTemplateService.HasTemplate(path))
-                _startTemplateService.Compile(cshtml, typeof(StartModel), path);
-            var instance = _startTemplateService.GetTemplate(cshtml, new StartModel(), path);
-            _startTemplateService.Run(instance);
-            var startTemplate = instance as StartTemplate<StartModel>;
-            if (startTemplate != null)
-            {
-                return startTemplate;
-            }
-            return null;
-        }
-
-        #endregion Templates
     }
 }

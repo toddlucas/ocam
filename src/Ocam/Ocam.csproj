@@ -50,12 +50,15 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ArchiveGenerator.cs" />
+    <Compile Include="MarkdownProcessor.cs" />
+    <Compile Include="RazorProcessor.cs" />
     <Compile Include="PluginCompiler.cs" />
     <Compile Include="Options.cs" />
     <Compile Include="PathInfo.cs" />
     <Compile Include="FileUtility.cs" />
     <Compile Include="PaginatorInfo.cs" />
     <Compile Include="PluginManager.cs" />
+    <Compile Include="StartProcessor.cs" />
     <Compile Include="TemplateProcessor.cs" />
     <Compile Include="SiteConfiguration.cs" />
     <Compile Include="ISiteContext.cs" />

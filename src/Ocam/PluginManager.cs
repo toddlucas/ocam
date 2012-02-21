@@ -44,7 +44,7 @@ namespace Ocam
                 var asm = System.Reflection.Assembly.LoadFrom(output);
                 _assemblyMap.Add(asm.FullName, asm);
 
-                // Load the new assembly intot he current app domain so it's
+                // Load the new assembly into the current app domain so it's
                 // visible to the templates.
                 AppDomain.CurrentDomain.Load(asm.FullName);
             }
