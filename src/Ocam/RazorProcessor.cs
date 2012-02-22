@@ -51,8 +51,8 @@ namespace Ocam
             model.Source = FileUtility.GetRelativePath(_context.SourceDir, path);
 
             // The page may reference it's own info.
-            if (_context.PageMap.ContainsKey(model.Source))
-                model.PageInfo = _context.PageMap[model.Source];
+            if (model.PageMap.ContainsKey(model.Source))
+                model.PageInfo = model.PageMap[model.Source];
             else
                 // Provide a default on the scan pass to obviate null checks.
                 model.PageInfo = new PageInfo();
