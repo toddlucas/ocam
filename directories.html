@@ -7,7 +7,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
 
-    <title>Home - Ocam</title>
+    <title>Directories - Ocam</title>
     <meta name="description" content="">
     <meta name="viewport" content="width=device-width">
 
@@ -44,30 +44,62 @@
             </div>
         </div>
         <div id="content">
-<h1>Ocam</h1>
+            <h1>Directories</h1>
+<p>Ocam expects your site to have the following top level directories.</p>
 
-<p>Ocam is a static site generator in the spirit of 
-<a href="https://github.com/mojombo/jekyll/wiki">Jekyl</a>
-that can be used to build blogs and other content rich sites, without 
-the need for any server side runtime capabilities or databases. It is written 
-in C#, runs on the .NET platform, and uses the 
-<a href="http://razorengine.codeplex.com/">RazorEngine</a>. This means that 
-those familiar with ASP.NET MVC can apply similar techniques to bulding 
-static sites as they are accustomed to with the MVC platform.</p>
+<ul>
+<li>Includes</li>
+<li>Layout</li>
+<li>Site</li>
+<li><em>Html</em></li>
+<li>Code</li>
+<li>Templates</li>
+</ul>
 
-<p>Content may be written in <a href="http://en.wikipedia.org/wiki/Markdown">Markdown</a> 
-or Razor (.cshtml) formatted files. Layout 
-files can be used in a way similar to that of MVC. Instead of partial views, 
-Ocam uses the <em>include</em> capabilities built into the RazorEngine.</p>
+<h3>Includes</h3>
 
-<p>Ocam uses the <a href="http://code.google.com/p/markdownsharp/">MarkdownSharp</a> 
-library for Markdown processing and <a href="http://pygments.org/">Pygments</a> 
-for syntax highlighting. MarkdownSharp has been modified to support 
-backtick fences like 
-<a href="http://github.github.com/github-flavored-markdown/">GitHub Flavored Markdown</a>
-and syntax highlighting. 
-These modifications are available 
-<a href="https://github.com/toddlucas/markdownsharp-highlighting">here</a>.</p>
+<p>The <code>Includes</code> directory contains any page fragments that will be
+reused from other pages. They are similar to the ASP.NET MVC concept of
+partials. To reference an include, use the <code>@Include()</code> helper.</p>
+
+<h3>Layouts</h3>
+
+<p>The <code>Layouts</code> directory contains any layout templates that will be referenced
+by Markdown or Razor files. A Layout is much like the MVC concept of layout.
+It typically contains the structure of an HTML page. The only requirement
+is that a call to <code>@RenderBody()</code> be present somewhere on the page. This method
+causes the contents of the referencing page to be emmited at that location.</p>
+
+<h3>Site</h3>
+
+<p>This directory contains the structure and content of your static site.
+It usually contains an <code>index.md</code>, <code>index.cshtml</code>, or <code>index.html</code>,
+at a minimum. Any files that are not Razor or Markdown will be copied
+to the <code>Html</code> directory verbatim.</p>
+
+<h3><em>Html</em></h3>
+
+<p>This file will be created if it's not already present.
+During processing, the <code>Site</code> directory is transformed to the <code>Html</code>
+directory. The directory will be created if it's not present. Any static
+files, such as JavaScript, CSS, or images will be copied over directly.</p>
+
+<p>To take your site live, all you have to do is upload the <code>Html</code> directory
+to a Web server</p>
+
+<h3>Code</h3>
+
+<p>The <code>Code</code> directory is used for plugins.
+It is still an experimental feature, so it won't be covered here in detail.
+The idea behind the code directory is that generic C# code can be added here and referenced by layouts and other templates at build time.
+Any C# files found in the <code>Code</code> directory will be compiled into an assemblies and loaded into Ocam at runtime.</p>
+
+<h3>Templates</h3>
+
+<p>Any non layout or include templates can be put into the <code>Templates</code> directory.
+The current categories and tags generator will make use of <code>Category.cshtml</code> and
+<code>Tag.cshtml</code> if it finds them in this directory.</p>
+
 
         </div>
 

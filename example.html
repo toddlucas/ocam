@@ -7,7 +7,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
 
-    <title>Home - Ocam</title>
+    <title>A simple example - Ocam</title>
     <meta name="description" content="">
     <meta name="viewport" content="width=device-width">
 
@@ -44,30 +44,63 @@
             </div>
         </div>
         <div id="content">
-<h1>Ocam</h1>
+            <h1>A simple example</h1>
+<p>This example shows how to create the most basic project.
+You'll need to open a command prompt and have <code>ocam.exe</code>
+available in your path.</p>
 
-<p>Ocam is a static site generator in the spirit of 
-<a href="https://github.com/mojombo/jekyll/wiki">Jekyl</a>
-that can be used to build blogs and other content rich sites, without 
-the need for any server side runtime capabilities or databases. It is written 
-in C#, runs on the .NET platform, and uses the 
-<a href="http://razorengine.codeplex.com/">RazorEngine</a>. This means that 
-those familiar with ASP.NET MVC can apply similar techniques to bulding 
-static sites as they are accustomed to with the MVC platform.</p>
+<p>Find a location for your project, chdir into the directory,
+and create these subdirectories:</p>
 
-<p>Content may be written in <a href="http://en.wikipedia.org/wiki/Markdown">Markdown</a> 
-or Razor (.cshtml) formatted files. Layout 
-files can be used in a way similar to that of MVC. Instead of partial views, 
-Ocam uses the <em>include</em> capabilities built into the RazorEngine.</p>
+<ul>
+<li>Layouts</li>
+<li>Site</li>
+</ul>
 
-<p>Ocam uses the <a href="http://code.google.com/p/markdownsharp/">MarkdownSharp</a> 
-library for Markdown processing and <a href="http://pygments.org/">Pygments</a> 
-for syntax highlighting. MarkdownSharp has been modified to support 
-backtick fences like 
-<a href="http://github.github.com/github-flavored-markdown/">GitHub Flavored Markdown</a>
-and syntax highlighting. 
-These modifications are available 
-<a href="https://github.com/toddlucas/markdownsharp-highlighting">here</a>.</p>
+<p>Create a file called <code>Layout.cshtml</code> in the <code>Layouts</code> directory.
+It should contain the following:</p>
+
+<div><div class="highlight"><pre>&lt;!DOCTYPE html&gt;
+&lt;head&gt;
+    &lt;title&gt;@ViewBag.Title&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+@RenderBody()
+&lt;/body&gt;
+&lt;/html&gt;
+</pre></div>
+</div>
+
+<p>Next, create a file in the <code>Site</code> directory called <code>index.md</code> and add the following content:</p>
+
+<div><div class="highlight"><pre>---
+Title = "My example index";
+Layout = "Layout";
+---
+
+Hello, world!
+</pre></div>
+</div>
+
+<p>To build the project, run the <code>ocam</code> command in the project's base directory.
+This will create an <code>Html</code> subdirectory which contains a generated file called 
+<code>index.html</code> that looks like this.</p>
+
+<div><div class="highlight"><pre>&lt;!DOCTYPE html&gt;
+&lt;head&gt;
+    &lt;title&gt;My example index&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+
+&lt;p&gt;Hello, world!&lt;/p&gt;
+
+&lt;/body&gt;
+&lt;/html&gt;
+</pre></div>
+</div>
+
+<p>That's it!</p>
+
 
         </div>
 

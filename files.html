@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<!--[if lt IE 7]> <html class="no-js lt-ie9 lt-ie8 lt-ie7" lang="en"> <![endif]-->
+<!--[if IE 7]>    <html class="no-js lt-ie9 lt-ie8" lang="en"> <![endif]-->
+<!--[if IE 8]>    <html class="no-js lt-ie9" lang="en"> <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en"> <!--<![endif]-->
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+
+    <title>Files - Ocam</title>
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width">
+
+    <link rel="stylesheet" href="styles/html5.css">
+    <link rel="stylesheet" href="styles/baseline.css" />
+    <link rel="stylesheet" href="styles/text.css" />
+    <link rel="stylesheet" href="styles/main.css" />
+
+    <script src="scripts/modernizr-2.5.0.min.js"></script>
+</head>
+<body>
+    <!--[if lt IE 7]><p class=chromeframe>Your browser isn't supported. <a href="http://browsehappy.com/">Upgrade to a different browser</a> to experience this site.</p><![endif]-->
+    <a href="https://github.com/toddlucas/ocam"><img style="position: absolute; top: 0; right: 0; border: 0;" src="http://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub" /></a>
+    <div id="container">
+        <header id="masthead">
+            <h1><a href=".">Ocam</a></h1>
+            <h3>Razor and Markdown static site generator</h3>
+            <div id="nav">
+                <ul>
+                    <li><a href="example.html">Example</a></li>
+                    <li><a href="directories.html">Directories</a></li>
+                    <li><a href="files.html">Files</a></li>
+                    <li><a href="configuration.html">Configuration</a></li>
+                </ul>
+            </div>
+        </header>
+        <div id="sidebar">
+            <h3>Download</h3>
+            <div class="download">
+              <a href="https://github.com/toddlucas/ocam/zipball/master">
+                <img border="0" width="90" src="https://github.com/images/modules/download/zip.png"></a>
+              <a href="https://github.com/toddlucas/ocam/tarball/master">
+                <img border="0" width="90" src="https://github.com/images/modules/download/tar.png"></a>
+            </div>
+        </div>
+        <div id="content">
+            <h1>Files</h1>
+<p>Ocam pages may be written in several formats. In addition to vanilla HTML,
+files may be written in C# Razor and Markdown. Any files that are not in
+one of these formats are copied to the <code>Html</code> output directory verbatim.
+This behavior makes it easy to structure your site any way you like, including
+having separate image, script, and style directories.</p>
+
+<h2>Content</h2>
+
+<p>Any content that is not a Razor or Markdown file is copied verbatim to the
+output <code>Html</code> directory.</p>
+
+<h3>Razor</h3>
+
+<p>Any <code>.cshtml</code> files under the <code>Site</code> directory will be loaded and 
+executed during the build process. Their contents will be rendered to the
+<code>Html</code> directory.</p>
+
+<p>The backing class for these pages is the <code>PageTemplate&lt;&gt;</code> class and the
+model is <code>PageModel</code>.</p>
+
+<div><div class="highlight"><pre>@{
+   Layout = "Main";
+   ViewBag.Title = "Home";
+}
+
+&lt;h2&gt;@ViewBag.Title&lt;/h2&gt;
+
+&lt;p&gt;Welcome!&lt;/p&gt;
+</pre></div>
+</div>
+
+<h3>Markdown</h3>
+
+<p>Any files with the extension <code>.markdown</code> or <code>.md</code> will be processed
+as Markdown and the result will be stored under the <code>Html</code> directory.</p>
+
+<p>Ocam processes the result of the Markdown transformation as Razor. This only
+works to a limited degree due to differences in syntax. In particular, 
+variables and model properties work, while block-level constructs generally 
+don't.</p>
+
+<p>Ocam Markdown files support a <em>front matter</em> section in the style of Jekyll,
+which is delimted by <code>---</code> markers. This section is parsed as C# as if
+it were in a <code>@{ ... }</code> code block at the head of a Razor file.</p>
+
+<p>Here is the equivalent of the above page in Ocam flavored Markdown.</p>
+
+<div><div class="highlight"><pre>---
+Layout = "Main";
+ViewBag.Title = "Home";
+---
+
+@ViewBag.Title
+===
+
+Welcome!
+</pre></div>
+</div>
+
+<p>Note that you must excape the @ symbol with a double @@ symbol if you want it to appear in the rendered output.
+This is required because Markdown files are postprocessed as Razor files.
+The @ symbol is interpreted as the begining of a Razor expression,
+which allows you to to reference Model properties or invoke helpers, such
+as <code>@Link()</code>.</p>
+
+<p>This requirement does not exist for code blocks. The @ symbol in a code
+block is automatically escaped, making it easier to paste C# code into 
+a Markdown file.</p>
+
+<h2>Templates</h2>
+
+<p>There are several template flavors: layouts, includes, and templates. 
+Generic templates are experimental and won't be covered here.</p>
+
+<h3>Layouts</h3>
+
+<p>A layout file is much like it's cousin in ASP.NET MVC. 
+It is used to define the structure of an HTML file that can be shared between pages.
+The only requirement is that <code>@RenderBody()</code> be called somewhere in the file.</p>
+
+<div><div class="highlight"><pre>&lt;html&gt;
+&lt;head&gt;
+    &lt;title&gt;@ViewBag.Title&lt;/title&gt;
+    &lt;link rel="stylesheet" href="@Href("~/styles/main.css")" /&gt;
+&lt;/head&gt;
+&lt;body&gt;
+@RenderBody()
+&lt;/body&gt;
+&lt;/html&gt;
+</pre></div>
+</div>
+
+<h3>Includes</h3>
+
+<p>Includes are pieces of code or markup that can be reused from other content or layout files.</p>
+
+<div><div class="highlight"><pre>&lt;nav&gt;
+    &lt;ul&gt;
+        &lt;li&gt;&lt;a href="@Link("index.md")"&gt;Home&lt;/a&gt;&lt;/li&gt;
+        &lt;li&gt;&lt;a href="@Link("about.md")"&gt;About&lt;/a&gt;&lt;/li&gt;
+    &lt;/ul&gt;
+&lt;/nav&gt;
+</pre></div>
+</div>
+
+<p>To reference an include, use the <code>Include</code> method:</p>
+
+<div><div class="highlight"><pre>@Include("NavMenu")
+</pre></div>
+</div>
+
+<p>Includes are similar to MVC partials.</p>
+
+
+        </div>
+
+        <footer>
+        <div id="footer">Copyright &copy; 2012 <a href="http://toddlucas.net">Todd Lucas</a> | Built with <a href="http://toddlucas.github.com/ocam/">Ocam</a></div>
+        </footer>
+    </div>
+
+
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-28999282-2']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+</body>
+</html>

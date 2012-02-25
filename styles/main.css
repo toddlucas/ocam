@@ -1,0 +1,198 @@
+
+/* --- Typography --- */
+body {
+  font: 13px/1.5 Geneva, Verdana, 'Helvetica Neue', Helvetica, Arial, 'Liberation Sans', FreeSans, sans-serif;
+}
+
+pre,
+code {
+  font-family: 'DejaVu Sans Mono', Menlo, Consolas, 'Lucida Console', monospace;
+}
+
+em, i {
+    font-style: italic;
+}
+
+strong, b {
+    font-weight: bold;
+}
+
+#masthead  h1 {
+    font-size: 14pt;
+    margin: 0;
+}
+
+#masthead  h3 {
+    font-size: 11pt;
+    font-style: italic;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font: 'Helvetica Neue', Helvetica, Tahoma, Arial, 'Liberation Sans', FreeSans, sans-serif;
+}
+
+p,
+dl,
+hr,
+ol,
+ul,
+pre,
+table,
+address,
+fieldset,
+figure {
+  margin-bottom: 12px;
+}
+
+/* --- Reset overrides --- */
+
+p,
+dl,
+hr,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+ol,
+ul,
+pre,
+table,
+address,
+fieldset,
+figure {
+  margin-bottom: 12px;
+}
+
+a {
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* --- Layout --- */
+
+#container {
+    width: 960px;
+    margin: 20px auto;
+}
+
+#masthead  {
+/*    border: 1px solid green; */
+    padding: 30px 30px 0 30px;
+}
+
+#content {
+/*    border: 1px solid red; */
+    width: 570px;
+    padding: 30px;
+}
+
+#content p {
+    text-align: justify;
+}
+
+#sidebar {
+/*    border: 1px solid blue; */
+    float: right;
+    width: 300px;
+    padding: 30px;
+}
+
+#footer  {
+/*    border: 1px solid black; */
+    padding: 0 30px 30px 30px;
+    font-size: 11px;
+    color: #888;
+}
+
+#footer  a {
+    color: #88f;
+}
+
+#nav  ul {
+    display: inline;
+    list-style-type: none;
+}
+
+#nav li {
+    display: inline;
+    margin-left: 0px;
+    padding: 0px 8px;
+    border-left: solid 1px #888;
+}
+
+#nav li:first-child {
+    border-left: none;
+    padding-left: 0px;
+}
+
+#nav  a {
+    color: blue;
+}
+
+#latest  ul {
+    list-style-type: none;
+}
+
+#latest li {
+    margin-left: 0;
+    margin-bottom: 12px;
+}
+
+pre {
+    margin: 0px;
+}
+
+.highlight {
+    padding: 6px;
+    margin-bottom: 12px;
+    background: #eee;
+    border-top: 1px solid #aaa;
+    border-bottom: 1px solid #aaa;
+}
+
+.post-title {
+}
+
+.post-title  a{
+    text-decoration: none;
+}
+
+.post-title  a:hover {
+    text-decoration: underline;
+}
+
+.post-date {
+    float: left;
+    width: 200px;
+    margin-left: -221px;
+    margin-right: 10px;
+    border-right: 1px solid #888;
+    padding-right: 10px;
+    text-align: right;
+    vertical-align: top;
+    margin-bottom: 12px;
+    color: #888;
+}
+
+.post-content {
+}
+
+.post-footer {
+}
+
+.paginator {
+}
+
+.disabled {
+    color: #888;
+}

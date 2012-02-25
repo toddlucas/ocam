@@ -7,7 +7,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
 
-    <title>Home - Ocam</title>
+    <title>Configuration - Ocam</title>
     <meta name="description" content="">
     <meta name="viewport" content="width=device-width">
 
@@ -44,30 +44,86 @@
             </div>
         </div>
         <div id="content">
-<h1>Ocam</h1>
+            <h1>Configuration</h1>
+<h3>Site.config</h3>
 
-<p>Ocam is a static site generator in the spirit of 
-<a href="https://github.com/mojombo/jekyll/wiki">Jekyl</a>
-that can be used to build blogs and other content rich sites, without 
-the need for any server side runtime capabilities or databases. It is written 
-in C#, runs on the .NET platform, and uses the 
-<a href="http://razorengine.codeplex.com/">RazorEngine</a>. This means that 
-those familiar with ASP.NET MVC can apply similar techniques to bulding 
-static sites as they are accustomed to with the MVC platform.</p>
+<p>You may override defaults by including a <code>Site.config</code> file in your project's base directory.</p>
 
-<p>Content may be written in <a href="http://en.wikipedia.org/wiki/Markdown">Markdown</a> 
-or Razor (.cshtml) formatted files. Layout 
-files can be used in a way similar to that of MVC. Instead of partial views, 
-Ocam uses the <em>include</em> capabilities built into the RazorEngine.</p>
+<div><div class="highlight"><pre>&lt;?xml version="1.0" encoding="utf-8" ?&gt;
+&lt;SiteConfiguration&gt;
+    &lt;IndexName&gt;index.html&lt;/IndexName&gt;
+&lt;/SiteConfiguration&gt;
+</pre></div>
+</div>
 
-<p>Ocam uses the <a href="http://code.google.com/p/markdownsharp/">MarkdownSharp</a> 
-library for Markdown processing and <a href="http://pygments.org/">Pygments</a> 
-for syntax highlighting. MarkdownSharp has been modified to support 
-backtick fences like 
-<a href="http://github.github.com/github-flavored-markdown/">GitHub Flavored Markdown</a>
-and syntax highlighting. 
-These modifications are available 
-<a href="https://github.com/toddlucas/markdownsharp-highlighting">here</a>.</p>
+<h3>Razor</h3>
+
+<p>Any <code>.cshtml</code> files under the <code>Site</code> directory will be loaded and 
+executed during the build process. Their contents will be rendered to the
+<code>Html</code> directory as an <code>.html</code> file.</p>
+
+<div><div class="highlight"><pre>@{
+   Layout = "Main";
+   Title = "Home";
+}
+
+&lt;h2&gt;@Title&lt;/h2&gt;
+
+&lt;p&gt;Welcome!&lt;/p&gt;
+</pre></div>
+</div>
+
+<p>The backing class for these pages is the <code>PageTemplate&lt;&gt;</code> class and the
+model is <code>PageModel</code>. This template has a set of properties that may be
+set in the head section of the page. They include the following:</p>
+
+<ul>
+<li>Layout - The name of a template in the <code>Layouts</code> directory</li>
+<li>Title - The title property sets the <code>ViewBag.Title</code> property, which may be
+accessed from layouts and includes</li>
+<li>Date - A date to associate with this page. If the page is a post, setting
+Date overrides the date derived from the file path.</li>
+<li>Published - Set to <code>false</code> to prevent the page from being generated or
+included in page or post lists</li>
+</ul>
+
+<h3>Markdown</h3>
+
+<p>Any files with the extension <code>.markdown</code> or <code>.md</code> will be processed
+as Markdown and the result will be stored under the <code>Html</code> directory.</p>
+
+<p>The <em>front matter</em> section may reference the same template properties as described above.</p>
+
+<p>Here is the equivalent of the above page in Ocam flavored Markdown.</p>
+
+<div><div class="highlight"><pre>---
+Layout = "Main";
+Title = "Home";
+---
+
+@Title
+===
+
+Welcome!
+</pre></div>
+</div>
+
+<h3><code>_PageStart.cshtml</code></h3>
+
+<p>To avoid duplicating things at the head of every file, you may instead
+create a <code>_PageStart.cshtml</code> file in any directory under <code>Site</code>.
+If found, it will be used to initialize common properties for all 
+generated files under the given directory.</p>
+
+<div><div class="highlight"><pre>@{
+   Layout = "Main" 
+}
+</pre></div>
+</div>
+
+<p>It serves much the same purpose as <code>_ViewStart.cshtml</code> does in
+the ASP.NET MVC environment.</p>
+
 
         </div>
 
