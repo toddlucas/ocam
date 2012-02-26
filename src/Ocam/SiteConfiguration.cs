@@ -37,6 +37,7 @@ namespace Ocam
         public bool Local { get; set; }
         public bool Rebase { get; set; }
         public bool UsePygments { get; set; }
+        public bool Verbose { get; set; }
 
         public SiteConfiguration()
         {
@@ -56,8 +57,9 @@ namespace Ocam
             Rebase = true;
 #endif
             ItemsPerPage = 20;
-            Local = true;
+            Local = false;
             UsePygments = true;
+            Verbose = false;
         }
 
         public static SiteConfiguration Load(string path)

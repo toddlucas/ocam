@@ -38,10 +38,11 @@ namespace Ocam
             string file;
             if (context.Config.Rebase)
             {
-                string dir = Path.Combine(dest, name);
+                file = Path.Combine(dest, name);
                 if (!String.IsNullOrWhiteSpace(page))
-                    dir = Path.Combine(dir, page);
-                file = Path.Combine(dir, context.Config.IndexName);
+                    file = Path.Combine(file, page);
+                if (!uri || context.Config.Local)
+                    file = Path.Combine(file, context.Config.IndexName);
             }
             else
             {

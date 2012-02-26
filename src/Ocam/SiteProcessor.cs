@@ -73,6 +73,11 @@ namespace Ocam
                     _config = new SiteConfiguration();
                 }
 
+                if (options.Local)
+                    _config.Local = true;
+                if (options.Verbose)
+                    _config.Verbose = true;
+
                 _context = new SiteContext()
                 {
                     Config = _config,
@@ -224,12 +229,13 @@ namespace Ocam
             Action<string, string> writer = null;
             if (write)
             {
-                PageInfo pageInfo = _context.PageMap[srcfile];
-                if (pageInfo == null)
+                if (!_context.PageMap.ContainsKey(srcfile))
                 {
                     // This file is unpublished.
                     return;
                 }
+
+                PageInfo pageInfo = _context.PageMap[srcfile];
 
                 dstfile = pageInfo.GetDestinationPath(_context, src, dst, file);
 
